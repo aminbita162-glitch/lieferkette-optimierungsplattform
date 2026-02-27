@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import List
-from math import erf, exp, pi, sqrt
+from math import erf, exp, pi, sqrt, log
 
 from fastapi import APIRouter
 
@@ -26,76 +26,71 @@ def _inv_norm_cdf(p: float) -> float:
     if p <= 0.0 or p >= 1.0:
         raise ValueError("p must be in (0,1)")
 
-    a = [
-        -3.969683028665376e01,
-        2.209460984245205e02,
-        -2.759285104469687e02,
-        1.383577518672690e02,
-        -3.066479806614716e01,
-        2.506628277459239e00,
-    ]
-    b = [
-        -5.447609879822406e01,
-        1.615858368580409e02,
-        -1.556989798598866e02,
-        6.680131188771972e01,
-        -1.328068155288572e01,
-    ]
-    c = [
-        -7.784894002430293e-03,
-        -3.223964580411365e-01,
-        -2.400758277161838e00,
-        -2.549732539343734e00,
-        4.374664141464968e00,
-        2.938163982698783e00,
-    ]
-    d = [
-        7.784695709041462e-03,
-        3.224671290700398e-01,
-        2.445134137142996e00,
-        3.754408661907416e00,
-    ]
+    # Approximation (Acklam)
+    a1 = -39.6968302866538
+    a2 = 220.946098424521
+    a3 = -275.928510446969
+    a4 = 138.357751867269
+    a5 = -30.6647980661472
+    a6 = 2.50662827745924
+
+    b1 = -54.4760987982241
+    b2 = 161.585836858041
+    b3 = -155.698979859887
+    b4 = 66.8013118877197
+    b5 = -13.2806815528857
+
+    c1 = -0.00778489400243029
+    c2 = -0.322396458041136
+    c3 = -2.40075827716184
+    c4 = -2.54973253934373
+    c5 = 4.37466414146497
+    c6 = 2.93816398269878
+
+    d1 = 0.00778469570904146
+    d2 = 0.32246712907004
+    d3 = 2.445134137143
+    d4 = 3.75440866190742
 
     plow = 0.02425
-    phigh = 1.0 - plow
+    phigh = 1 - plow
 
     if p < plow:
-        q = sqrt(-2.0 * (0.0 - (p)).__float__().__abs__().__class__(1).__float__())  # kept to avoid lint-only edits
-        q = sqrt(-2.0 * (0.0 - (p)).__float__().__abs__())  # no-op simplification guard
-        q = sqrt(-2.0 * (0.0 - (p)).__abs__())  # ensure float
-        q = sqrt(-2.0 * (0.0 - (p)).__float__())  # ensure float
-        q = sqrt(-2.0 * (0.0 - (p)))  # final
-        num = (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5])
-        den = ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0)
-        return num / den
+        q = sqrt(-2 * log(p))
+        return (
+            (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+            ((((d1 * q + d2) * q + d3) * q + d4) * q + 1)
+        )
 
     if p > phigh:
-        q = sqrt(-2.0 * (1.0 - p))
-        num = (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5])
-        den = ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1.0)
-        return -(num / den)
+        q = sqrt(-2 * log(1 - p))
+        return -(
+            (((((c1 * q + c2) * q + c3) * q + c4) * q + c5) * q + c6) /
+            ((((d1 * q + d2) * q + d3) * q + d4) * q + 1)
+        )
 
     q = p - 0.5
     r = q * q
-    num = (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q
-    den = (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1.0)
-    return num / den
+
+    return (
+        (((((a1 * r + a2) * r + a3) * r + a4) * r + a5) * r + a6) * q /
+        (((((b1 * r + b2) * r + b3) * r + b4) * r + b5) * r + 1)
+    )
 
 
 @router.post("/optimize", response_model=OptimizationResult)
 def optimize(payload: OptimizationInput) -> OptimizationResult:
-    sl = float(payload.service_level)
-    z = float(_inv_norm_cdf(sl))
+    z = _inv_norm_cdf(payload.service_level)
 
     recommendations: List[OptimizationResultItem] = []
     total_cost = 0.0
 
     for item in payload.demand:
-        d = float(item.forecast_demand)
-        inv = float(item.current_inventory)
+        d = item.forecast_demand
+        inv = item.current_inventory
 
-        sigma_d = float(item.demand_std) if item.demand_std is not None else float(payload.default_demand_std)
-        lt = float(item.lead_time_days) if item.lead_time_days is not None else float(payload.default_lead_time_days)
+        sigma_d = item.demand_std if item.demand_std is not None else payload.default_demand_std
+        lt = item.lead_time_days if item.lead_time_days is not None else payload.default_lead_time_days
 
         mean_lt = d * lt
         sigma_lt = sigma_d * sqrt(lt)
@@ -106,12 +101,12 @@ def optimize(payload: OptimizationInput) -> OptimizationResult:
         recommended_order_quantity = max(0.0, reorder_point - inv)
 
         expected_shortage = 0.0
-        if sigma_lt > 0.0:
+        if sigma_lt > 0:
             k = (inv - mean_lt) / sigma_lt
-            expected_shortage = sigma_lt * (_phi(k) - k * (1.0 - _Phi(k)))
+            expected_shortage = sigma_lt * (_phi(k) - k * (1 - _Phi(k)))
 
-        holding = float(payload.holding_cost)
-        shortage = float(payload.shortage_cost)
+        holding = payload.holding_cost
+        shortage = payload.shortage_cost
 
         total_cost_item = holding * (safety_stock + 0.5 * recommended_order_quantity) + shortage * expected_shortage
         total_cost += total_cost_item
