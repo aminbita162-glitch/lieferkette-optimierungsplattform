@@ -2,43 +2,39 @@ from __future__ import annotations
 
 from typing import List
 from fastapi import APIRouter
-from app.models.optimization import OptimizationInput, OptimizationResult, OptimizationResultItem
+
+from app.models.optimization import (
+    OptimizationInput,
+    OptimizationResult,
+    OptimizationResultItem,
+)
 
 router = APIRouter(tags=["Optimize"])
 
+
 @router.post("/optimize", response_model=OptimizationResult)
 def optimize(payload: OptimizationInput) -> OptimizationResult:
-    """
-    Simple baseline optimizer:
-    - Allocates available stock to each item up to demand.
-    - Computes unmet demand (shortage).
-    """
+    recommendations: List[OptimizationResultItem] = []
+    total_cost = 0.0
 
-    results: List[OptimizationResultItem] = []
-    total_shortage = 0.0
+    for item in payload.demand:
+        demand = float(item.forecast_demand)
+        inventory = float(item.current_inventory)
 
-    for item in payload.items:
-        demand = float(item.demand)
-        stock = float(item.current_stock)
+        recommended_order_quantity = max(0.0, demand - inventory)
+        safety_stock = 0.0
 
-        allocated = min(demand, stock)
-        shortage = max(0.0, demand - stock)
+        total_cost += float(payload.holding_cost) * (recommended_order_quantity + safety_stock)
 
-        total_shortage += shortage
-
-        results.append(
+        recommendations.append(
             OptimizationResultItem(
-                sku=item.sku,
-                demand=demand,
-                current_stock=stock,
-                allocated=allocated,
-                shortage=shortage,
+                product_id=item.product_id,
+                recommended_order_quantity=recommended_order_quantity,
+                safety_stock=safety_stock,
             )
         )
 
     return OptimizationResult(
-        ok=True,
-        objective="min_shortage_baseline",
-        total_shortage=total_shortage,
-        items=results,
+        total_cost=total_cost,
+        recommendations=recommendations,
     )
