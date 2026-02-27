@@ -1,26 +1,40 @@
-from pydantic import BaseModel, Field
+from __future__ import annotations
+
 from typing import List
 
+from fastapi import APIRouter
+from app.models.optimization import (
+    OptimizationInput,
+    OptimizationResult,
+    OptimizationResultItem,
+)
 
-class DemandItem(BaseModel):
-    product_id: str = Field(..., example="SKU-001")
-    forecast_demand: float = Field(..., example=120.5)
-    current_inventory: float = Field(..., example=80)
-
-
-class OptimizationInput(BaseModel):
-    service_level: float = Field(..., example=0.95)
-    holding_cost: float = Field(..., example=2.5)
-    shortage_cost: float = Field(..., example=10.0)
-    demand: List[DemandItem]
+router = APIRouter(tags=["Optimize"])
 
 
-class OptimizationResultItem(BaseModel):
-    product_id: str
-    recommended_order_quantity: float
-    safety_stock: float
+@router.post("/optimize", response_model=OptimizationResult)
+def optimize(payload: OptimizationInput) -> OptimizationResult:
+    recommendations: List[OptimizationResultItem] = []
+    total_cost = 0.0
 
+    for item in payload.demand:
+        demand = float(item.forecast_demand)
+        inventory = float(item.current_inventory)
 
-class OptimizationResult(BaseModel):
-    total_cost: float
-    recommendations: List[OptimizationResultItem]
+        recommended_order_quantity = max(0.0, demand - inventory)
+        safety_stock = 0.0
+
+        total_cost += float(payload.holding_cost) * (recommended_order_quantity + safety_stock)
+
+        recommendations.append(
+            OptimizationResultItem(
+                product_id=item.product_id,
+                recommended_order_quantity=recommended_order_quantity,
+                safety_stock=safety_stock,
+            )
+        )
+
+    return OptimizationResult(
+        total_cost=total_cost,
+        recommendations=recommendations,
+    )
