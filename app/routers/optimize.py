@@ -1,49 +1,44 @@
+from __future__ import annotations
+
+from typing import List
 from fastapi import APIRouter
-from app.models.optimization import (
-    OptimizationInput,
-    OptimizationResult,
-    OptimizationResultItem,
-)
+from app.models.optimization import OptimizationInput, OptimizationResult, OptimizationResultItem
 
 router = APIRouter(tags=["Optimize"])
 
-
 @router.post("/optimize", response_model=OptimizationResult)
-def optimize(payload: OptimizationInput):
-    recs = []
-    total_cost = 0.0
+def optimize(payload: OptimizationInput) -> OptimizationResult:
+    """
+    Simple baseline optimizer:
+    - Allocates available stock to each item up to demand.
+    - Computes unmet demand (shortage).
+    """
 
-    for item in payload.demand:
-        # Safety stock (نسخه MVP ساده)
-        safety_stock = max(
-            item.forecast_demand * (1.0 - payload.service_level), 0.0
-        )
+    results: List[OptimizationResultItem] = []
+    total_shortage = 0.0
 
-        # Recommended order quantity
-        order_qty = max(
-            item.forecast_demand - item.current_inventory + safety_stock, 0.0
-        )
+    for item in payload.items:
+        demand = float(item.demand)
+        stock = float(item.current_stock)
 
-        # Simple cost estimation
-        holding = payload.holding_cost * max(
-            item.current_inventory + order_qty - item.forecast_demand, 0.0
-        )
+        allocated = min(demand, stock)
+        shortage = max(0.0, demand - stock)
 
-        shortage = payload.shortage_cost * max(
-            item.forecast_demand - (item.current_inventory + order_qty), 0.0
-        )
+        total_shortage += shortage
 
-        total_cost += holding + shortage
-
-        recs.append(
+        results.append(
             OptimizationResultItem(
-                product_id=item.product_id,
-                recommended_order_quantity=round(order_qty, 4),
-                safety_stock=round(safety_stock, 4),
+                sku=item.sku,
+                demand=demand,
+                current_stock=stock,
+                allocated=allocated,
+                shortage=shortage,
             )
         )
 
     return OptimizationResult(
-        total_cost=round(total_cost, 4),
-        recommendations=recs,
+        ok=True,
+        objective="min_shortage_baseline",
+        total_shortage=total_shortage,
+        items=results,
     )
