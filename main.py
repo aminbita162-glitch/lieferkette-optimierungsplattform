@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.routers.optimize import router as optimize_router
+from app.routers.simulation_router import router as simulation_router
 
 
 # ----------------------------
@@ -37,7 +38,6 @@ app = FastAPI(
 # ----------------------------
 # CORS (safe default: allow all; later restrict by env)
 # ----------------------------
-# برای حالت حرفه‌ای‌تر: بعداً ALLOWED_ORIGINS رو با دامنه‌های واقعی محدود می‌کنیم.
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
 
 app.add_middleware(
@@ -52,6 +52,7 @@ app.add_middleware(
 # Routers
 # ----------------------------
 app.include_router(optimize_router)
+app.include_router(simulation_router)
 
 
 # ----------------------------
@@ -65,7 +66,6 @@ async def add_request_id_and_log(request: Request, call_next):
     try:
         response = await call_next(request)
     except Exception as e:
-        # let the exception handlers format the response
         logger.exception(f"Unhandled error | request_id={request_id} | path={request.url.path}")
         raise e
 
