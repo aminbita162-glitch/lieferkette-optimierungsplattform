@@ -56,22 +56,6 @@ font-size:28px;
 font-weight:bold;
 }
 
-table{
-width:100%;
-border-collapse:collapse;
-background:white;
-}
-
-th,td{
-padding:14px;
-border-bottom:1px solid #eee;
-text-align:left;
-}
-
-th{
-background:#fafafa;
-}
-
 .loading{
 font-size:18px;
 color:#555;
@@ -163,11 +147,11 @@ const response=await fetch("https://lieferkette-optimierungsplattform.onrender.c
 const data=await response.json()
 
 document.getElementById("product_id").innerText=data.product_id
-document.getElementById("total_cost").innerText=Number(data.total_cost).toFixed(2)
-document.getElementById("recommended_order_quantity").innerText=Number(data.recommended_order_quantity).toFixed(2)
-document.getElementById("safety_stock").innerText=Number(data.safety_stock).toFixed(2)
-document.getElementById("reorder_point").innerText=Number(data.reorder_point).toFixed(2)
-document.getElementById("expected_shortage").innerText=Number(data.expected_shortage).toFixed(2)
+document.getElementById("total_cost").innerText=data.total_cost.toFixed(2)
+document.getElementById("recommended_order_quantity").innerText=data.recommended_order_quantity.toFixed(2)
+document.getElementById("safety_stock").innerText=data.safety_stock.toFixed(2)
+document.getElementById("reorder_point").innerText=data.reorder_point.toFixed(2)
+document.getElementById("expected_shortage").innerText=data.expected_shortage.toFixed(2)
 
 new Chart(document.getElementById("inventoryChart"),{
 
@@ -197,9 +181,7 @@ data.expected_shortage
 
 },
 
-options:{
-responsive:true
-}
+options:{responsive:true}
 
 })
 
@@ -211,7 +193,7 @@ contentEl.style.display="block"
 catch(error){
 
 statusEl.className="error"
-statusEl.innerText="Dashboard failed to load."
+statusEl.innerText="Dashboard failed to load"
 
 }
 
