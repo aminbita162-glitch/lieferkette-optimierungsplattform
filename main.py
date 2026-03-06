@@ -10,6 +10,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.routers.optimize import router as optimize_router
 from app.routers.simulation_router import router as simulation_router
+from app.dashboard.router import router as dashboard_router
 
 
 # ----------------------------
@@ -53,6 +54,7 @@ app.add_middleware(
 # ----------------------------
 app.include_router(optimize_router)
 app.include_router(simulation_router)
+app.include_router(dashboard_router)
 
 
 # ----------------------------
