@@ -47,3 +47,21 @@ def sample_optimization():
     )
 
     return r.json()
+
+
+@router.get("/summary")
+def dashboard_summary():
+
+    r = requests.get(f"{API_BASE}/dashboard/sample-optimization")
+    data = r.json()
+
+    item = data["recommendations"][0]
+
+    return {
+        "total_cost": data["total_cost"],
+        "product_id": item["product_id"],
+        "recommended_order_quantity": item["recommended_order_quantity"],
+        "safety_stock": item["safety_stock"],
+        "reorder_point": item["reorder_point"],
+        "expected_shortage": item["expected_shortage"]
+    }
