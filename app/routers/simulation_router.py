@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.simulation.demand_simulator import generate_daily_demand
+from app.app.simulation.demand_simulator import generate_daily_demand
 
 router = APIRouter(prefix="/simulation", tags=["Simulation"])
 
