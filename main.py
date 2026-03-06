@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.optimize import router as optimize_router
 from app.routers.simulation_router import router as simulation_router
-from app.dashboard.router import router as dashboard_router
 
 
 app = FastAPI(
@@ -13,7 +12,7 @@ app = FastAPI(
 )
 
 
-# CORS (اجازه دسترسی برای Dashboard)
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,13 +22,12 @@ app.add_middleware(
 )
 
 
-# Routers
+# API routers
 app.include_router(optimize_router)
 app.include_router(simulation_router)
-app.include_router(dashboard_router)
 
 
-# Serve Dashboard HTML
+# Dashboard static files
 app.mount("/dashboard", StaticFiles(directory="dashboard", html=True), name="dashboard")
 
 
