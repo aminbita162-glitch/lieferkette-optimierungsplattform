@@ -1,239 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Supply Chain Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      color: #222;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Supply Chain Dashboard</title>
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px;
-    }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    h1 {
-      margin-bottom: 24px;
-      font-size: 32px;
-    }
+<style>
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 20px;
-      margin-bottom: 24px;
-    }
+body{
+margin:0;
+font-family:Arial,sans-serif;
+background:#f4f6f9;
+color:#222;
+}
 
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-    }
+.container{
+max-width:1100px;
+margin:0 auto;
+padding:24px;
+}
 
-    .full {
-      grid-column: 1 / -1;
-    }
+h1{
+margin-bottom:24px;
+font-size:32px;
+}
 
-    .label {
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 6px;
-    }
+.grid{
+display:grid;
+grid-template-columns:repeat(2,minmax(0,1fr));
+gap:20px;
+margin-bottom:24px;
+}
 
-    .value {
-      font-size: 28px;
-      font-weight: bold;
-    }
+.card{
+background:white;
+border-radius:12px;
+padding:20px;
+box-shadow:0 2px 10px rgba(0,0,0,0.08);
+}
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-    }
+.full{
+grid-column:1/-1;
+}
 
-    th, td {
-      padding: 14px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
-    }
+.label{
+font-size:14px;
+color:#666;
+margin-bottom:6px;
+}
 
-    th {
-      background: #fafafa;
-    }
+.value{
+font-size:28px;
+font-weight:bold;
+}
 
-    .loading {
-      font-size: 18px;
-      color: #555;
-    }
+table{
+width:100%;
+border-collapse:collapse;
+background:white;
+}
 
-    .error {
-      color: #b00020;
-      font-weight: bold;
-    }
+th,td{
+padding:14px;
+border-bottom:1px solid #eee;
+text-align:left;
+}
 
-    @media (max-width: 768px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
+th{
+background:#fafafa;
+}
 
-      .full {
-        grid-column: auto;
-      }
-    }
-  </style>
+.loading{
+font-size:18px;
+color:#555;
+}
+
+.error{
+color:#b00020;
+font-weight:bold;
+}
+
+@media(max-width:768px){
+
+.grid{
+grid-template-columns:1fr;
+}
+
+.full{
+grid-column:auto;
+}
+
+}
+
+</style>
 </head>
+
 <body>
-  <div class="container">
-    <h1>Supply Chain Dashboard</h1>
 
-    <div id="status" class="loading">Loading dashboard...</div>
+<div class="container">
 
-    <div id="dashboard-content" style="display:none;">
-      <div class="grid">
-        <div class="card">
-          <div class="label">Product ID</div>
-          <div class="value" id="product_id">-</div>
-        </div>
+<h1>Supply Chain Dashboard</h1>
 
-        <div class="card">
-          <div class="label">Total Cost</div>
-          <div class="value" id="total_cost">-</div>
-        </div>
+<div id="status" class="loading">Loading dashboard...</div>
 
-        <div class="card">
-          <div class="label">Recommended Order Quantity</div>
-          <div class="value" id="recommended_order_quantity">-</div>
-        </div>
+<div id="dashboard-content" style="display:none;">
 
-        <div class="card">
-          <div class="label">Safety Stock</div>
-          <div class="value" id="safety_stock">-</div>
-        </div>
+<div class="grid">
 
-        <div class="card">
-          <div class="label">Reorder Point</div>
-          <div class="value" id="reorder_point">-</div>
-        </div>
+<div class="card">
+<div class="label">Product ID</div>
+<div class="value" id="product_id">-</div>
+</div>
 
-        <div class="card">
-          <div class="label">Expected Shortage</div>
-          <div class="value" id="expected_shortage">-</div>
-        </div>
+<div class="card">
+<div class="label">Total Cost</div>
+<div class="value" id="total_cost">-</div>
+</div>
 
-        <div class="card full">
-          <canvas id="inventoryChart"></canvas>
-        </div>
+<div class="card">
+<div class="label">Recommended Order Quantity</div>
+<div class="value" id="recommended_order_quantity">-</div>
+</div>
 
-        <div class="card full">
-          <h2>Optimization Summary</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>Metric</th>
-                <th>Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Product ID</td>
-                <td id="table_product_id">-</td>
-              </tr>
-              <tr>
-                <td>Total Cost</td>
-                <td id="table_total_cost">-</td>
-              </tr>
-              <tr>
-                <td>Recommended Order Quantity</td>
-                <td id="table_recommended_order_quantity">-</td>
-              </tr>
-              <tr>
-                <td>Safety Stock</td>
-                <td id="table_safety_stock">-</td>
-              </tr>
-              <tr>
-                <td>Reorder Point</td>
-                <td id="table_reorder_point">-</td>
-              </tr>
-              <tr>
-                <td>Expected Shortage</td>
-                <td id="table_expected_shortage">-</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
+<div class="card">
+<div class="label">Safety Stock</div>
+<div class="value" id="safety_stock">-</div>
+</div>
 
-  <script>
-    async function loadDashboard() {
-      const statusEl = document.getElementById("status");
-      const contentEl = document.getElementById("dashboard-content");
+<div class="card">
+<div class="label">Reorder Point</div>
+<div class="value" id="reorder_point">-</div>
+</div>
 
-      try {
-        const response = await fetch("https://lieferkette-optimierungsplattform.onrender.com/dashboard/summary");
-        const data = await response.json();
+<div class="card">
+<div class="label">Expected Shortage</div>
+<div class="value" id="expected_shortage">-</div>
+</div>
 
-        document.getElementById("product_id").innerText = data.product_id;
-        document.getElementById("total_cost").innerText = Number(data.total_cost).toFixed(2);
-        document.getElementById("recommended_order_quantity").innerText = Number(data.recommended_order_quantity).toFixed(2);
-        document.getElementById("safety_stock").innerText = Number(data.safety_stock).toFixed(2);
-        document.getElementById("reorder_point").innerText = Number(data.reorder_point).toFixed(2);
-        document.getElementById("expected_shortage").innerText = Number(data.expected_shortage).toFixed(2);
+<div class="card full">
+<canvas id="inventoryChart"></canvas>
+</div>
 
-        document.getElementById("table_product_id").innerText = data.product_id;
-        document.getElementById("table_total_cost").innerText = Number(data.total_cost).toFixed(2);
-        document.getElementById("table_recommended_order_quantity").innerText = Number(data.recommended_order_quantity).toFixed(2);
-        document.getElementById("table_safety_stock").innerText = Number(data.safety_stock).toFixed(2);
-        document.getElementById("table_reorder_point").innerText = Number(data.reorder_point).toFixed(2);
-        document.getElementById("table_expected_shortage").innerText = Number(data.expected_shortage).toFixed(2);
+</div>
 
-        new Chart(document.getElementById("inventoryChart"), {
-          type: "bar",
-          data: {
-            labels: [
-              "Recommended Order",
-              "Safety Stock",
-              "Reorder Point",
-              "Expected Shortage"
-            ],
-            datasets: [{
-              label: "Inventory Metrics",
-              data: [
-                data.recommended_order_quantity,
-                data.safety_stock,
-                data.reorder_point,
-                data.expected_shortage
-              ]
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: {
-                display: true
-              }
-            }
-          }
-        });
+</div>
 
-        statusEl.style.display = "none";
-        contentEl.style.display = "block";
-      } catch (error) {
-        statusEl.className = "error";
-        statusEl.innerText = "Dashboard failed to load.";
-      }
-    }
+</div>
 
-    loadDashboard();
-  </script>
+<script>
+
+async function loadDashboard(){
+
+const statusEl=document.getElementById("status")
+const contentEl=document.getElementById("dashboard-content")
+
+try{
+
+const response=await fetch("https://lieferkette-optimierungsplattform.onrender.com/dashboard/sample-optimization")
+
+const data=await response.json()
+
+document.getElementById("product_id").innerText=data.product_id
+document.getElementById("total_cost").innerText=Number(data.total_cost).toFixed(2)
+document.getElementById("recommended_order_quantity").innerText=Number(data.recommended_order_quantity).toFixed(2)
+document.getElementById("safety_stock").innerText=Number(data.safety_stock).toFixed(2)
+document.getElementById("reorder_point").innerText=Number(data.reorder_point).toFixed(2)
+document.getElementById("expected_shortage").innerText=Number(data.expected_shortage).toFixed(2)
+
+new Chart(document.getElementById("inventoryChart"),{
+
+type:"bar",
+
+data:{
+
+labels:[
+"Order Quantity",
+"Safety Stock",
+"Reorder Point",
+"Expected Shortage"
+],
+
+datasets:[{
+
+label:"Inventory Metrics",
+
+data:[
+data.recommended_order_quantity,
+data.safety_stock,
+data.reorder_point,
+data.expected_shortage
+]
+
+}]
+
+},
+
+options:{
+responsive:true
+}
+
+})
+
+statusEl.style.display="none"
+contentEl.style.display="block"
+
+}
+
+catch(error){
+
+statusEl.className="error"
+statusEl.innerText="Dashboard failed to load."
+
+}
+
+}
+
+loadDashboard()
+
+</script>
+
 </body>
 </html>
