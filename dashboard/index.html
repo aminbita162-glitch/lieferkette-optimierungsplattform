@@ -15,7 +15,7 @@ color:#222;
 }
 
 .container{
-max-width:1100px;
+max-width:1200px;
 margin:0 auto;
 padding:24px;
 }
@@ -62,8 +62,9 @@ font-weight:bold;
 
 .form-grid{
 display:grid;
-grid-template-columns:repeat(2,minmax(0,1fr));
+grid-template-columns:repeat(3,minmax(0,1fr));
 gap:16px;
+margin-bottom:20px;
 }
 
 .field{
@@ -83,6 +84,48 @@ padding:12px;
 border:1px solid #d9d9d9;
 border-radius:8px;
 font-size:14px;
+}
+
+.products-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:12px;
+gap:12px;
+flex-wrap:wrap;
+}
+
+.product-list{
+display:flex;
+flex-direction:column;
+gap:16px;
+margin-bottom:20px;
+}
+
+.product-item{
+border:1px solid #e5e7eb;
+border-radius:12px;
+padding:16px;
+background:#fafafa;
+}
+
+.product-item-header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:12px;
+gap:12px;
+}
+
+.product-title{
+font-size:16px;
+font-weight:bold;
+}
+
+.product-grid{
+display:grid;
+grid-template-columns:repeat(5,minmax(0,1fr));
+gap:12px;
 }
 
 .actions{
@@ -108,6 +151,11 @@ background:#e5e7eb;
 color:#111827;
 }
 
+button.danger{
+background:#dc2626;
+color:white;
+}
+
 .loading{
 font-size:18px;
 color:#555;
@@ -130,6 +178,37 @@ margin-bottom:16px;
 display:none;
 }
 
+.table-wrapper{
+overflow-x:auto;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:12px;
+}
+
+th, td{
+padding:12px;
+border-bottom:1px solid #e5e7eb;
+text-align:left;
+font-size:14px;
+}
+
+th{
+background:#f9fafb;
+font-weight:bold;
+}
+
+@media(max-width:992px){
+.form-grid{
+grid-template-columns:1fr 1fr;
+}
+.product-grid{
+grid-template-columns:1fr 1fr;
+}
+}
+
 @media(max-width:768px){
 .grid{
 grid-template-columns:1fr;
@@ -140,6 +219,9 @@ grid-column:auto;
 .form-grid{
 grid-template-columns:1fr;
 }
+.product-grid{
+grid-template-columns:1fr;
+}
 }
 </style>
 </head>
@@ -148,37 +230,12 @@ grid-template-columns:1fr;
 <div class="container">
 
 <h1>Supply Chain Dashboard</h1>
-<div class="subtitle">Interactive inventory optimization dashboard</div>
+<div class="subtitle">Interactive multi-product inventory optimization dashboard</div>
 
 <div class="card full">
-<div class="label">Optimization Inputs</div>
+<div class="label">Global Optimization Settings</div>
 
 <div class="form-grid">
-<div class="field">
-<label for="product_id">Product ID</label>
-<input id="product_id_input" type="text" value="SKU-001">
-</div>
-
-<div class="field">
-<label for="forecast_demand">Forecast Demand</label>
-<input id="forecast_demand_input" type="number" step="0.01" value="120.5">
-</div>
-
-<div class="field">
-<label for="current_inventory">Current Inventory</label>
-<input id="current_inventory_input" type="number" step="0.01" value="80">
-</div>
-
-<div class="field">
-<label for="demand_std">Demand Std Dev</label>
-<input id="demand_std_input" type="number" step="0.01" value="15">
-</div>
-
-<div class="field">
-<label for="lead_time_days">Lead Time (days)</label>
-<input id="lead_time_days_input" type="number" step="1" value="7">
-</div>
-
 <div class="field">
 <label for="service_level">Service Level</label>
 <input id="service_level_input" type="number" step="0.01" value="0.95">
@@ -193,7 +250,26 @@ grid-template-columns:1fr;
 <label for="shortage_cost">Shortage Cost</label>
 <input id="shortage_cost_input" type="number" step="0.01" value="10">
 </div>
+
+<div class="field">
+<label for="default_demand_std">Default Demand Std Dev</label>
+<input id="default_demand_std_input" type="number" step="0.01" value="10">
 </div>
+
+<div class="field">
+<label for="default_lead_time_days">Default Lead Time (days)</label>
+<input id="default_lead_time_days_input" type="number" step="1" value="7">
+</div>
+</div>
+</div>
+
+<div class="card full">
+<div class="products-header">
+<div class="label" style="margin-bottom:0;">Products</div>
+<button id="addProductButton" type="button" class="secondary">Add Product</button>
+</div>
+
+<div id="productList" class="product-list"></div>
 
 <div class="actions">
 <button id="runButton" type="button">Run Optimization</button>
@@ -209,8 +285,8 @@ grid-template-columns:1fr;
 <div class="grid">
 
 <div class="card">
-<div class="label">Product ID</div>
-<div class="value" id="product_id">-</div>
+<div class="label">Products Optimized</div>
+<div class="value" id="product_count">-</div>
 </div>
 
 <div class="card">
@@ -218,24 +294,23 @@ grid-template-columns:1fr;
 <div class="value" id="total_cost">-</div>
 </div>
 
-<div class="card">
-<div class="label">Recommended Order Quantity</div>
-<div class="value" id="recommended_order_quantity">-</div>
+<div class="card full">
+<div class="label">Optimization Results</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr>
+<th>Product ID</th>
+<th>Order Quantity</th>
+<th>Safety Stock</th>
+<th>Reorder Point</th>
+<th>Expected Shortage</th>
+<th>Total Cost Item</th>
+</tr>
+</thead>
+<tbody id="resultsTableBody"></tbody>
+</table>
 </div>
-
-<div class="card">
-<div class="label">Safety Stock</div>
-<div class="value" id="safety_stock">-</div>
-</div>
-
-<div class="card">
-<div class="label">Reorder Point</div>
-<div class="value" id="reorder_point">-</div>
-</div>
-
-<div class="card">
-<div class="label">Expected Shortage</div>
-<div class="value" id="expected_shortage">-</div>
 </div>
 
 <div class="card full">
@@ -250,6 +325,24 @@ grid-template-columns:1fr;
 <script>
 const API_BASE_URL = "https://lieferkette-optimierungsplattform.onrender.com";
 let inventoryChart = null;
+let productCounter = 0;
+
+const defaultProducts = [
+{
+product_id: "SKU-001",
+forecast_demand: 120.5,
+current_inventory: 80,
+demand_std: 15,
+lead_time_days: 7
+},
+{
+product_id: "SKU-002",
+forecast_demand: 50,
+current_inventory: 30,
+demand_std: 10,
+lead_time_days: 5
+}
+];
 
 function setHidden(elementId, hidden){
 const el = document.getElementById(elementId);
@@ -266,34 +359,115 @@ setHidden("errorBox", true);
 setHidden("successBox", true);
 }
 
+function createProductRow(product = {}){
+productCounter += 1;
+
+const wrapper = document.createElement("div");
+wrapper.className = "product-item";
+wrapper.dataset.productIndex = productCounter;
+
+wrapper.innerHTML = `
+<div class="product-item-header">
+<div class="product-title">Product ${productCounter}</div>
+<button type="button" class="danger remove-product-button">Remove</button>
+</div>
+
+<div class="product-grid">
+<div class="field">
+<label>Product ID</label>
+<input class="product-id-input" type="text" value="${product.product_id || ""}">
+</div>
+
+<div class="field">
+<label>Forecast Demand</label>
+<input class="forecast-demand-input" type="number" step="0.01" value="${product.forecast_demand ?? ""}">
+</div>
+
+<div class="field">
+<label>Current Inventory</label>
+<input class="current-inventory-input" type="number" step="0.01" value="${product.current_inventory ?? ""}">
+</div>
+
+<div class="field">
+<label>Demand Std Dev</label>
+<input class="demand-std-input" type="number" step="0.01" value="${product.demand_std ?? ""}">
+</div>
+
+<div class="field">
+<label>Lead Time (days)</label>
+<input class="lead-time-input" type="number" step="1" value="${product.lead_time_days ?? ""}">
+</div>
+</div>
+`;
+
+wrapper.querySelector(".remove-product-button").addEventListener("click", () => {
+wrapper.remove();
+});
+
+return wrapper;
+}
+
+function loadDefaultProducts(){
+const productList = document.getElementById("productList");
+productList.innerHTML = "";
+productCounter = 0;
+
+defaultProducts.forEach(product => {
+productList.appendChild(createProductRow(product));
+});
+}
+
+function addNewProduct(){
+const productList = document.getElementById("productList");
+productList.appendChild(createProductRow({
+product_id: `SKU-00${productCounter + 1}`,
+forecast_demand: 0,
+current_inventory: 0,
+demand_std: 0,
+lead_time_days: 1
+}));
+}
+
 function getPayload(){
+const productItems = Array.from(document.querySelectorAll(".product-item"));
+
+const demand = productItems.map(item => ({
+product_id: item.querySelector(".product-id-input").value,
+forecast_demand: Number(item.querySelector(".forecast-demand-input").value),
+current_inventory: Number(item.querySelector(".current-inventory-input").value),
+demand_std: Number(item.querySelector(".demand-std-input").value),
+lead_time_days: Number(item.querySelector(".lead-time-input").value)
+}));
+
 return {
 service_level: Number(document.getElementById("service_level_input").value),
 holding_cost: Number(document.getElementById("holding_cost_input").value),
 shortage_cost: Number(document.getElementById("shortage_cost_input").value),
-demand: [
-{
-product_id: document.getElementById("product_id_input").value,
-forecast_demand: Number(document.getElementById("forecast_demand_input").value),
-current_inventory: Number(document.getElementById("current_inventory_input").value),
-demand_std: Number(document.getElementById("demand_std_input").value),
-lead_time_days: Number(document.getElementById("lead_time_days_input").value)
-}
-],
-default_demand_std: Number(document.getElementById("demand_std_input").value),
-default_lead_time_days: Number(document.getElementById("lead_time_days_input").value)
+demand,
+default_demand_std: Number(document.getElementById("default_demand_std_input").value),
+default_lead_time_days: Number(document.getElementById("default_lead_time_days_input").value)
 };
 }
 
 function renderResult(data){
-const item = data.recommendations[0];
-
-document.getElementById("product_id").innerText = item.product_id;
+document.getElementById("product_count").innerText = String(data.recommendations.length);
 document.getElementById("total_cost").innerText = Number(data.total_cost).toFixed(2);
-document.getElementById("recommended_order_quantity").innerText = Number(item.recommended_order_quantity).toFixed(2);
-document.getElementById("safety_stock").innerText = Number(item.safety_stock).toFixed(2);
-document.getElementById("reorder_point").innerText = Number(item.reorder_point).toFixed(2);
-document.getElementById("expected_shortage").innerText = Number(item.expected_shortage).toFixed(2);
+
+const tbody = document.getElementById("resultsTableBody");
+tbody.innerHTML = "";
+
+data.recommendations.forEach(item => {
+const row = document.createElement("tr");
+row.innerHTML = `
+<td>${item.product_id}</td>
+<td>${Number(item.recommended_order_quantity).toFixed(2)}</td>
+<td>${Number(item.safety_stock).toFixed(2)}</td>
+<td>${Number(item.reorder_point).toFixed(2)}</td>
+<td>${Number(item.expected_shortage).toFixed(2)}</td>
+<td>${Number(item.total_cost_item).toFixed(2)}</td>
+`;
+tbody.appendChild(row);
+});
 
 const ctx = document.getElementById("inventoryChart");
 
@@ -304,21 +478,21 @@ inventoryChart.destroy();
 inventoryChart = new Chart(ctx, {
 type: "bar",
 data: {
-labels: [
-"Order Quantity",
-"Safety Stock",
-"Reorder Point",
-"Expected Shortage"
-],
-datasets: [{
-label: "Inventory Metrics",
-data: [
-item.recommended_order_quantity,
-item.safety_stock,
-item.reorder_point,
-item.expected_shortage
+labels: data.recommendations.map(item => item.product_id),
+datasets: [
+{
+label: "Order Quantity",
+data: data.recommendations.map(item => item.recommended_order_quantity)
+},
+{
+label: "Safety Stock",
+data: data.recommendations.map(item => item.safety_stock)
+},
+{
+label: "Reorder Point",
+data: data.recommendations.map(item => item.reorder_point)
+}
 ]
-}]
 },
 options: {
 responsive: true
@@ -361,20 +535,21 @@ setHidden("errorBox", false);
 }
 
 function resetDefaults(){
-document.getElementById("product_id_input").value = "SKU-001";
-document.getElementById("forecast_demand_input").value = "120.5";
-document.getElementById("current_inventory_input").value = "80";
-document.getElementById("demand_std_input").value = "15";
-document.getElementById("lead_time_days_input").value = "7";
 document.getElementById("service_level_input").value = "0.95";
 document.getElementById("holding_cost_input").value = "2.5";
 document.getElementById("shortage_cost_input").value = "10";
+document.getElementById("default_demand_std_input").value = "10";
+document.getElementById("default_lead_time_days_input").value = "7";
+loadDefaultProducts();
 resetMessages();
+setHidden("dashboard-content", true);
 }
 
 document.getElementById("runButton").addEventListener("click", runOptimization);
 document.getElementById("resetButton").addEventListener("click", resetDefaults);
+document.getElementById("addProductButton").addEventListener("click", addNewProduct);
 
+loadDefaultProducts();
 runOptimization();
 </script>
 
