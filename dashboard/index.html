@@ -297,7 +297,7 @@ SKU-001,120.5,80,15,7
 SKU-002,50,30,10,5
 SKU-003,200,150,20,10</div>
 
-<input id="csvFileInput" type="file" accept=".csv">
+<input id="csvFileInput" type="file" accept=".csv,text/csv">
 
 <div class="actions" style="margin-top:0;">
 <button id="loadCsvButton" type="button" class="secondary">Load CSV</button>
@@ -375,36 +375,42 @@ const defaultProducts = [
 { product_id:"SKU-002", forecast_demand:50, current_inventory:30, demand_std:10, lead_time_days:5 }
 ];
 
-function setHidden(id,hidden){
-const el=document.getElementById(id);
-hidden?el.classList.add("hidden"):el.classList.remove("hidden");
+function setHidden(id, hidden){
+const el = document.getElementById(id);
+if(hidden){
+el.classList.add("hidden");
+}else{
+el.classList.remove("hidden");
+}
 }
 
 function resetMessages(){
-setHidden("status",true);
-setHidden("errorBox",true);
-setHidden("successBox",true);
+setHidden("status", true);
+setHidden("errorBox", true);
+setHidden("successBox", true);
 }
 
 function showError(msg){
-resetMessages();
-document.getElementById("errorBox").innerText=msg;
-setHidden("errorBox",false);
+setHidden("status", true);
+document.getElementById("errorBox").innerText = msg;
+setHidden("errorBox", false);
+setHidden("successBox", true);
 }
 
 function showSuccess(msg){
-resetMessages();
-document.getElementById("successBox").innerText=msg;
-setHidden("successBox",false);
+setHidden("status", true);
+document.getElementById("successBox").innerText = msg;
+setHidden("successBox", false);
+setHidden("errorBox", true);
 }
 
-function createProductRow(product={}){
-productCounter++;
+function createProductRow(product = {}){
+productCounter += 1;
 
-const wrapper=document.createElement("div");
-wrapper.className="product-item";
+const wrapper = document.createElement("div");
+wrapper.className = "product-item";
 
-wrapper.innerHTML=`
+wrapper.innerHTML = `
 <div class="product-item-header">
 <div class="product-title">Product ${productCounter}</div>
 <button type="button" class="danger remove-product-button">Remove</button>
@@ -412,25 +418,27 @@ wrapper.innerHTML=`
 
 <div class="product-grid">
 <div class="field"><label>Product ID</label>
-<input class="product-id-input" value="${product.product_id||""}"></div>
+<input class="product-id-input" value="${product.product_id ?? ""}"></div>
 
 <div class="field"><label>Forecast Demand</label>
-<input class="forecast-demand-input" type="number" step="0.01" value="${product.forecast_demand??""}"></div>
+<input class="forecast-demand-input" type="number" step="0.01" value="${product.forecast_demand ?? ""}"></div>
 
 <div class="field"><label>Current Inventory</label>
-<input class="current-inventory-input" type="number" step="0.01" value="${product.current_inventory??""}"></div>
+<input class="current-inventory-input" type="number" step="0.01" value="${product.current_inventory ?? ""}"></div>
 
 <div class="field"><label>Demand Std Dev</label>
-<input class="demand-std-input" type="number" step="0.01" value="${product.demand_std??""}"></div>
+<input class="demand-std-input" type="number" step="0.01" value="${product.demand_std ?? ""}"></div>
 
 <div class="field"><label>Lead Time (days)</label>
-<input class="lead-time-input" type="number" step="1" value="${product.lead_time_days??""}"></div>
+<input class="lead-time-input" type="number" step="1" value="${product.lead_time_days ?? ""}"></div>
 </div>
 `;
 
-wrapper.querySelector(".remove-product-button").onclick=()=>{
-if(document.querySelectorAll(".product-item").length<=1){
-showError("At least one product required");return;}
+wrapper.querySelector(".remove-product-button").onclick = () => {
+if(document.querySelectorAll(".product-item").length <= 1){
+showError("At least one product is required.");
+return;
+}
 wrapper.remove();
 };
 
@@ -438,160 +446,274 @@ return wrapper;
 }
 
 function loadProducts(products){
-const list=document.getElementById("productList");
-list.innerHTML="";
-productCounter=0;
-products.forEach(p=>list.appendChild(createProductRow(p)));
+const list = document.getElementById("productList");
+list.innerHTML = "";
+productCounter = 0;
+products.forEach(product => {
+list.appendChild(createProductRow(product));
+});
 }
 
 function addNewProduct(){
-document.getElementById("productList").appendChild(createProductRow({}));
+document.getElementById("productList").appendChild(
+createProductRow({
+product_id: "",
+forecast_demand: "",
+current_inventory: "",
+demand_std: "",
+lead_time_days: ""
+})
+);
 }
 
 function getPayload(){
-const items=[...document.querySelectorAll(".product-item")];
+const items = [...document.querySelectorAll(".product-item")];
 
-return{
-service_level:Number(service_level_input.value),
-holding_cost:Number(holding_cost_input.value),
-shortage_cost:Number(shortage_cost_input.value),
-default_demand_std:Number(default_demand_std_input.value),
-default_lead_time_days:Number(default_lead_time_days_input.value),
-demand:items.map(i=>({
-product_id:i.querySelector(".product-id-input").value.trim(),
-forecast_demand:Number(i.querySelector(".forecast-demand-input").value),
-current_inventory:Number(i.querySelector(".current-inventory-input").value),
-demand_std:Number(i.querySelector(".demand-std-input").value),
-lead_time_days:Number(i.querySelector(".lead-time-input").value)
+return {
+service_level: Number(service_level_input.value),
+holding_cost: Number(holding_cost_input.value),
+shortage_cost: Number(shortage_cost_input.value),
+default_demand_std: Number(default_demand_std_input.value),
+default_lead_time_days: Number(default_lead_time_days_input.value),
+demand: items.map(item => ({
+product_id: item.querySelector(".product-id-input").value.trim(),
+forecast_demand: Number(item.querySelector(".forecast-demand-input").value),
+current_inventory: Number(item.querySelector(".current-inventory-input").value),
+demand_std: Number(item.querySelector(".demand-std-input").value),
+lead_time_days: Number(item.querySelector(".lead-time-input").value)
 }))
 };
 }
 
 function renderResult(data){
-product_count.innerText=data.recommendations.length;
-total_cost.innerText=Number(data.total_cost).toFixed(2);
+product_count.innerText = String(data.recommendations.length);
+total_cost.innerText = Number(data.total_cost).toFixed(2);
 
-const tbody=document.getElementById("resultsTableBody");
-tbody.innerHTML="";
+const tbody = document.getElementById("resultsTableBody");
+tbody.innerHTML = "";
 
-data.recommendations.forEach(r=>{
-tbody.innerHTML+=`
-<tr>
-<td>${r.product_id}</td>
-<td>${Number(r.recommended_order_quantity).toFixed(2)}</td>
-<td>${Number(r.safety_stock).toFixed(2)}</td>
-<td>${Number(r.reorder_point).toFixed(2)}</td>
-<td>${Number(r.expected_shortage).toFixed(2)}</td>
-<td>${Number(r.total_cost_item).toFixed(2)}</td>
-</tr>`;
+data.recommendations.forEach(item => {
+const row = document.createElement("tr");
+row.innerHTML = `
+<td>${item.product_id}</td>
+<td>${Number(item.recommended_order_quantity).toFixed(2)}</td>
+<td>${Number(item.safety_stock).toFixed(2)}</td>
+<td>${Number(item.reorder_point).toFixed(2)}</td>
+<td>${Number(item.expected_shortage).toFixed(2)}</td>
+<td>${Number(item.total_cost_item).toFixed(2)}</td>
+`;
+tbody.appendChild(row);
 });
 
-const ctx=document.getElementById("inventoryChart");
-if(inventoryChart)inventoryChart.destroy();
+const ctx = document.getElementById("inventoryChart");
+if(inventoryChart){
+inventoryChart.destroy();
+}
 
-inventoryChart=new Chart(ctx,{
-type:"bar",
-data:{
-labels:data.recommendations.map(r=>r.product_id),
-datasets:[
-{label:"Order Quantity",data:data.recommendations.map(r=>r.recommended_order_quantity)},
-{label:"Safety Stock",data:data.recommendations.map(r=>r.safety_stock)},
-{label:"Reorder Point",data:data.recommendations.map(r=>r.reorder_point)}
+inventoryChart = new Chart(ctx, {
+type: "bar",
+data: {
+labels: data.recommendations.map(item => item.product_id),
+datasets: [
+{
+label: "Order Quantity",
+data: data.recommendations.map(item => item.recommended_order_quantity)
+},
+{
+label: "Safety Stock",
+data: data.recommendations.map(item => item.safety_stock)
+},
+{
+label: "Reorder Point",
+data: data.recommendations.map(item => item.reorder_point)
+}
 ]
 },
-options:{responsive:true}
+options: {
+responsive: true
+}
 });
 
-setHidden("dashboard-content",false);
+setHidden("dashboard-content", false);
+}
+
+function normalizeCsvText(text){
+let normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+
+if(normalized.startsWith("\uFEFF")){
+normalized = normalized.slice(1);
+}
+
+const nonEmptyLines = normalized
+.split("\n")
+.map(line => line.trim())
+.filter(line => line.length > 0);
+
+if(nonEmptyLines.length === 0){
+throw new Error("CSV file is empty.");
+}
+
+const headerLine = nonEmptyLines[0];
+const commaCount = (headerLine.match(/,/g) || []).length;
+const semicolonCount = (headerLine.match(/;/g) || []).length;
+const delimiter = semicolonCount > commaCount ? ";" : ",";
+
+return {
+delimiter,
+lines: nonEmptyLines
+};
 }
 
 function parseCsv(text){
-const lines=text.trim().split(/\r?\n/);
-const headers=lines[0].split(",");
+const { delimiter, lines } = normalizeCsvText(text);
 
-const rows=lines.slice(1).map(l=>{
-const v=l.split(",");
-return{
-product_id:v[0],
-forecast_demand:Number(v[1]),
-current_inventory:Number(v[2]),
-demand_std:Number(v[3]),
-lead_time_days:Number(v[4])
+const headers = lines[0]
+.split(delimiter)
+.map(value => value.trim().replace(/^"|"$/g, ""));
+
+const requiredHeaders = [
+"product_id",
+"forecast_demand",
+"current_inventory",
+"demand_std",
+"lead_time_days"
+];
+
+for(const requiredHeader of requiredHeaders){
+if(!headers.includes(requiredHeader)){
+throw new Error(`Missing required column: ${requiredHeader}`);
+}
+}
+
+const headerIndex = {
+product_id: headers.indexOf("product_id"),
+forecast_demand: headers.indexOf("forecast_demand"),
+current_inventory: headers.indexOf("current_inventory"),
+demand_std: headers.indexOf("demand_std"),
+lead_time_days: headers.indexOf("lead_time_days")
 };
+
+const products = lines.slice(1).map((line, index) => {
+const values = line
+.split(delimiter)
+.map(value => value.trim().replace(/^"|"$/g, ""));
+
+const product = {
+product_id: values[headerIndex.product_id] ?? "",
+forecast_demand: Number(values[headerIndex.forecast_demand]),
+current_inventory: Number(values[headerIndex.current_inventory]),
+demand_std: Number(values[headerIndex.demand_std]),
+lead_time_days: Number(values[headerIndex.lead_time_days])
+};
+
+if(!product.product_id){
+throw new Error(`Missing product_id in row ${index + 2}`);
+}
+
+if(
+Number.isNaN(product.forecast_demand) ||
+Number.isNaN(product.current_inventory) ||
+Number.isNaN(product.demand_std) ||
+Number.isNaN(product.lead_time_days)
+){
+throw new Error(`Invalid numeric value in row ${index + 2}`);
+}
+
+return product;
 });
 
-return rows;
+if(products.length === 0){
+throw new Error("CSV file must include at least one product row.");
+}
+
+return products;
 }
 
 async function loadCsvFile(){
-const file=csvFileInput.files[0];
-if(!file){showError("Select CSV first");return;}
+resetMessages();
+
+const file = csvFileInput.files[0];
+if(!file){
+showError("Please select a CSV file first.");
+return;
+}
 
 try{
-const text=await file.text();
-const products=parseCsv(text);
+const text = await file.text();
+const products = parseCsv(text);
 loadProducts(products);
-showSuccess("CSV loaded");
-}catch(e){
-showError("CSV error");
+setHidden("dashboard-content", true);
+showSuccess(`CSV loaded successfully: ${products.length} products`);
+}catch(error){
+showError(error.message || "CSV load failed.");
 }
 }
 
 function downloadTemplate(){
-const csv=`product_id,forecast_demand,current_inventory,demand_std,lead_time_days
+const csv = `product_id,forecast_demand,current_inventory,demand_std,lead_time_days
 SKU-001,120.5,80,15,7
-SKU-002,50,30,10,5`;
+SKU-002,50,30,10,5
+SKU-003,200,150,20,10`;
 
-const blob=new Blob([csv],{type:"text/csv"});
-const url=URL.createObjectURL(blob);
+const blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+const url = URL.createObjectURL(blob);
 
-const a=document.createElement("a");
-a.href=url;
-a.download="products_template.csv";
-a.click();
+const link = document.createElement("a");
+link.href = url;
+link.download = "products_template.csv";
+document.body.appendChild(link);
+link.click();
+document.body.removeChild(link);
+URL.revokeObjectURL(url);
 }
 
 async function runOptimization(){
 resetMessages();
-setHidden("status",false);
+setHidden("status", false);
 
 try{
-const res=await fetch(API_BASE_URL+"/optimize",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify(getPayload())
+const response = await fetch(API_BASE_URL + "/optimize", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify(getPayload())
 });
 
-const data=await res.json();
-if(!res.ok)throw new Error("Optimization failed");
+const data = await response.json();
 
-renderResult(data);
-showSuccess("Optimization completed");
-
-}catch(e){
-showError(e.message);
+if(!response.ok){
+throw new Error(
+data?.detail?.error?.message ||
+data?.error?.message ||
+"Optimization failed."
+);
 }
 
-setHidden("status",true);
+renderResult(data);
+showSuccess("Optimization completed successfully.");
+}catch(error){
+showError(error.message || "Optimization failed.");
+}
 }
 
 function resetDefaults(){
-service_level_input.value="0.95";
-holding_cost_input.value="2.5";
-shortage_cost_input.value="10";
-default_demand_std_input.value="10";
-default_lead_time_days_input.value="7";
-csvFileInput.value="";
+service_level_input.value = "0.95";
+holding_cost_input.value = "2.5";
+shortage_cost_input.value = "10";
+default_demand_std_input.value = "10";
+default_lead_time_days_input.value = "7";
+csvFileInput.value = "";
 loadProducts(defaultProducts);
-setHidden("dashboard-content",true);
+setHidden("dashboard-content", true);
 resetMessages();
 }
 
-runButton.onclick=runOptimization;
-resetButton.onclick=resetDefaults;
-addProductButton.onclick=addNewProduct;
-loadCsvButton.onclick=loadCsvFile;
-downloadTemplateButton.onclick=downloadTemplate;
+runButton.onclick = runOptimization;
+resetButton.onclick = resetDefaults;
+addProductButton.onclick = addNewProduct;
+loadCsvButton.onclick = loadCsvFile;
+downloadTemplateButton.onclick = downloadTemplate;
 
 loadProducts(defaultProducts);
 runOptimization();
