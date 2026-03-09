@@ -86,6 +86,29 @@ border-radius:8px;
 font-size:14px;
 }
 
+.csv-box{
+display:flex;
+flex-direction:column;
+gap:12px;
+margin-top:16px;
+}
+
+.csv-help{
+font-size:14px;
+color:#555;
+line-height:1.6;
+}
+
+.csv-example{
+background:#f9fafb;
+border:1px solid #e5e7eb;
+border-radius:8px;
+padding:12px;
+font-size:13px;
+overflow-x:auto;
+white-space:pre-wrap;
+}
+
 .products-header{
 display:flex;
 justify-content:space-between;
@@ -261,6 +284,24 @@ grid-template-columns:1fr;
 <input id="default_lead_time_days_input" type="number" step="1" value="7">
 </div>
 </div>
+
+<div class="csv-box">
+<div class="label">CSV Upload</div>
+<div class="csv-help">
+Upload a CSV file with these columns:
+<strong>product_id, forecast_demand, current_inventory, demand_std, lead_time_days</strong>
+</div>
+
+<div class="csv-example">product_id,forecast_demand,current_inventory,demand_std,lead_time_days
+SKU-001,120.5,80,15,7
+SKU-002,50,30,10,5
+SKU-003,200,150,20,10</div>
+
+<input id="csvFileInput" type="file" accept=".csv">
+<div class="actions" style="margin-top:0;">
+<button id="loadCsvButton" type="button" class="secondary">Load CSV</button>
+</div>
+</div>
 </div>
 
 <div class="card full">
@@ -359,6 +400,12 @@ setHidden("errorBox", true);
 setHidden("successBox", true);
 }
 
+function showError(message){
+resetMessages();
+document.getElementById("errorBox").innerText = message;
+setHidden("errorBox", false);
+}
+
 function createProductRow(product = {}){
 productCounter += 1;
 
@@ -401,20 +448,29 @@ wrapper.innerHTML = `
 `;
 
 wrapper.querySelector(".remove-product-button").addEventListener("click", () => {
+const allItems = document.querySelectorAll(".product-item");
+if(allItems.length <= 1){
+showError("At least one product is required.");
+return;
+}
 wrapper.remove();
 });
 
 return wrapper;
 }
 
-function loadDefaultProducts(){
+function loadProducts(products){
 const productList = document.getElementById("productList");
 productList.innerHTML = "";
 productCounter = 0;
 
-defaultProducts.forEach(product => {
+products.forEach(product => {
 productList.appendChild(createProductRow(product));
 });
+}
+
+function loadDefaultProducts(){
+loadProducts(defaultProducts);
 }
 
 function addNewProduct(){
@@ -432,7 +488,7 @@ function getPayload(){
 const productItems = Array.from(document.querySelectorAll(".product-item"));
 
 const demand = productItems.map(item => ({
-product_id: item.querySelector(".product-id-input").value,
+product_id: item.querySelector(".product-id-input").value.trim(),
 forecast_demand: Number(item.querySelector(".forecast-demand-input").value),
 current_inventory: Number(item.querySelector(".current-inventory-input").value),
 demand_std: Number(item.querySelector(".demand-std-input").value),
@@ -502,6 +558,77 @@ responsive: true
 setHidden("dashboard-content", false);
 }
 
+function parseCsvText(csvText){
+const lines = csvText
+.split(/\r?\n/)
+.map(line => line.trim())
+.filter(line => line.length > 0);
+
+if(lines.length < 2){
+throw new Error("CSV file must include a header and at least one data row.");
+}
+
+const headers = lines[0].split(",").map(h => h.trim());
+
+const requiredHeaders = [
+"product_id",
+"forecast_demand",
+"current_inventory",
+"demand_std",
+"lead_time_days"
+];
+
+for(const header of requiredHeaders){
+if(!headers.includes(header)){
+throw new Error(`Missing required CSV column: ${header}`);
+}
+}
+
+const rows = lines.slice(1).map(line => {
+const values = line.split(",").map(v => v.trim());
+const row = {};
+headers.forEach((header, index) => {
+row[header] = values[index] ?? "";
+});
+return {
+product_id: row.product_id,
+forecast_demand: Number(row.forecast_demand),
+current_inventory: Number(row.current_inventory),
+demand_std: Number(row.demand_std),
+lead_time_days: Number(row.lead_time_days)
+};
+});
+
+if(rows.length === 0){
+throw new Error("No product rows found in CSV file.");
+}
+
+return rows;
+}
+
+async function loadCsvFile(){
+resetMessages();
+
+const fileInput = document.getElementById("csvFileInput");
+const file = fileInput.files[0];
+
+if(!file){
+showError("Please select a CSV file first.");
+return;
+}
+
+try{
+const text = await file.text();
+const products = parseCsvText(text);
+loadProducts(products);
+document.getElementById("successBox").innerText = "CSV loaded successfully";
+setHidden("successBox", false);
+setHidden("dashboard-content", true);
+}catch(error){
+showError(error.message || "Failed to read CSV file.");
+}
+}
+
 async function runOptimization(){
 resetMessages();
 setHidden("status", false);
@@ -526,6 +653,7 @@ throw new Error(data?.detail?.error?.message || data?.error?.message || "Optimiz
 renderResult(data);
 
 setHidden("status", true);
+document.getElementById("successBox").innerText = "Optimization completed successfully";
 setHidden("successBox", false);
 }catch(error){
 setHidden("status", true);
@@ -540,6 +668,7 @@ document.getElementById("holding_cost_input").value = "2.5";
 document.getElementById("shortage_cost_input").value = "10";
 document.getElementById("default_demand_std_input").value = "10";
 document.getElementById("default_lead_time_days_input").value = "7";
+document.getElementById("csvFileInput").value = "";
 loadDefaultProducts();
 resetMessages();
 setHidden("dashboard-content", true);
@@ -548,6 +677,7 @@ setHidden("dashboard-content", true);
 document.getElementById("runButton").addEventListener("click", runOptimization);
 document.getElementById("resetButton").addEventListener("click", resetDefaults);
 document.getElementById("addProductButton").addEventListener("click", addNewProduct);
+document.getElementById("loadCsvButton").addEventListener("click", loadCsvFile);
 
 loadDefaultProducts();
 runOptimization();
