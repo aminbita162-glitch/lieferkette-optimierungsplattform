@@ -1000,18 +1000,25 @@
         throw new Error("Please login first.");
       }
 
-      const orderWarehouseInput = document.getElementById("orderWarehouseId");
-      const warehouseIdRaw = orderWarehouseInput.value.trim();
+      const description = document.getElementById("orderDescription").value.trim();
+      const latRaw = document.getElementById("orderLatitude").value.trim();
+      const lonRaw = document.getElementById("orderLongitude").value.trim();
+      const demandRaw = document.getElementById("orderDemand").value.trim();
+      const warehouseIdRaw = document.getElementById("orderWarehouseId").value.trim();
+
+      if(latRaw === "" || lonRaw === "" || demandRaw === ""){
+        throw new Error("Latitude, Longitude and Demand are required.");
+      }
 
       const payload = {
-        description: document.getElementById("orderDescription").value.trim(),
-        latitude: Number(document.getElementById("orderLatitude").value),
-        longitude: Number(document.getElementById("orderLongitude").value),
-        demand: Number(document.getElementById("orderDemand").value)
+        description: description,
+        latitude: parseFloat(latRaw),
+        longitude: parseFloat(lonRaw),
+        demand: parseInt(demandRaw)
       };
 
       if(warehouseIdRaw !== ""){
-        payload.warehouse_id = Number(warehouseIdRaw);
+        payload.warehouse_id = parseInt(warehouseIdRaw);
       }
 
       await apiPost("/orders/", payload);
@@ -1023,7 +1030,12 @@
         "success"
       );
 
-      orderWarehouseInput.value = "";
+      document.getElementById("orderDescription").value = "";
+      document.getElementById("orderLatitude").value = "";
+      document.getElementById("orderLongitude").value = "";
+      document.getElementById("orderDemand").value = "";
+      document.getElementById("orderWarehouseId").value = "";
+
       await loadOrders();
       await loadWarehouses();
     }
