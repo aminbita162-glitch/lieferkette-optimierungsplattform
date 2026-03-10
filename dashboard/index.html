@@ -603,7 +603,18 @@
               </div>
               <div class="field">
                 <label>Warehouse ID</label>
-                <input id="orderWarehouseId" type="number" step="1" placeholder="Leave empty for AI allocation" />
+                <input
+                  id="orderWarehouseId"
+                  name="orderWarehouseIdNew"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  placeholder="Leave empty for AI allocation"
+                  value=""
+                />
               </div>
             </div>
 
@@ -664,6 +675,13 @@
       }else{
         authInfo.textContent = "Not authenticated.";
       }
+    }
+
+    function sanitizeWarehouseIdInput(){
+      const input = document.getElementById("orderWarehouseId");
+      if(!input) return;
+
+      input.value = String(input.value || "").replace(/[^\d]/g, "");
     }
 
     function createWarehouseIcon(){
@@ -1000,6 +1018,8 @@
         throw new Error("Please login first.");
       }
 
+      sanitizeWarehouseIdInput();
+
       const description = document.getElementById("orderDescription").value.trim();
       const latRaw = document.getElementById("orderLatitude").value.trim();
       const lonRaw = document.getElementById("orderLongitude").value.trim();
@@ -1014,11 +1034,15 @@
         description: description,
         latitude: parseFloat(latRaw),
         longitude: parseFloat(lonRaw),
-        demand: parseInt(demandRaw)
+        demand: parseInt(demandRaw, 10)
       };
 
       if(warehouseIdRaw !== ""){
-        payload.warehouse_id = parseInt(warehouseIdRaw);
+        const parsedWarehouseId = parseInt(warehouseIdRaw, 10);
+        if(Number.isNaN(parsedWarehouseId)){
+          throw new Error("Warehouse ID must be a valid number or left empty.");
+        }
+        payload.warehouse_id = parsedWarehouseId;
       }
 
       await apiPost("/orders/", payload);
@@ -1092,6 +1116,19 @@
     };
 
     document.getElementById("logoutButton").onclick = logout;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const warehouseIdInput = document.getElementById("orderWarehouseId");
+      if(warehouseIdInput){
+        warehouseIdInput.value = "";
+        warehouseIdInput.addEventListener("input", sanitizeWarehouseIdInput);
+        warehouseIdInput.addEventListener("focus", () => {
+          if(warehouseIdInput.value === "0"){
+            warehouseIdInput.value = "";
+          }
+        });
+      }
+    });
 
     initMap();
     updateAuthInfo();
