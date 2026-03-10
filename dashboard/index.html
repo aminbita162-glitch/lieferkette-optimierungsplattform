@@ -603,7 +603,7 @@
               </div>
               <div class="field">
                 <label>Warehouse ID</label>
-                <input id="orderWarehouseId" type="number" step="1" placeholder="2" />
+                <input id="orderWarehouseId" type="number" step="1" placeholder="Leave empty for AI allocation" />
               </div>
             </div>
 
@@ -1000,23 +1000,30 @@
         throw new Error("Please login first.");
       }
 
-      const warehouseIdRaw = document.getElementById("orderWarehouseId").value.trim();
+      const orderWarehouseInput = document.getElementById("orderWarehouseId");
+      const warehouseIdRaw = orderWarehouseInput.value.trim();
 
       const payload = {
         description: document.getElementById("orderDescription").value.trim(),
         latitude: Number(document.getElementById("orderLatitude").value),
         longitude: Number(document.getElementById("orderLongitude").value),
-        demand: Number(document.getElementById("orderDemand").value),
-        warehouse_id: warehouseIdRaw === "" ? null : Number(warehouseIdRaw)
+        demand: Number(document.getElementById("orderDemand").value)
       };
 
+      if(warehouseIdRaw !== ""){
+        payload.warehouse_id = Number(warehouseIdRaw);
+      }
+
       await apiPost("/orders/", payload);
+
       showStatus(
-        payload.warehouse_id === null
+        warehouseIdRaw === ""
           ? "Order created successfully with AI warehouse allocation."
           : "Order created successfully.",
         "success"
       );
+
+      orderWarehouseInput.value = "";
       await loadOrders();
       await loadWarehouses();
     }
