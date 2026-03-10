@@ -17,13 +17,15 @@ from app.models.order import Order
 from app.routers.ai_router import router as ai_router
 from app.routers.optimize import router as optimize_router
 from app.routers.simulation_router import router as simulation_router
+from app.routers.warehouse_router import router as warehouse_router
+from app.routers.order_router import router as order_router
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Lieferkette Optimierungsplattform API",
-    version="0.7.0"
+    version="0.8.0"
 )
 
 app.add_middleware(
@@ -128,13 +130,11 @@ async def get_current_user(
     return user
 
 
-from app.routers.warehouse_router import router as warehouse_router
-
-
 app.include_router(optimize_router)
 app.include_router(simulation_router)
 app.include_router(ai_router)
 app.include_router(warehouse_router)
+app.include_router(order_router)
 
 
 @app.get("/")
