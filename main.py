@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.database import Base, engine, get_db
 from app.models.user import User
 from app.models.warehouse import Warehouse
+from app.models.order import Order
 from app.routers.ai_router import router as ai_router
 from app.routers.optimize import router as optimize_router
 from app.routers.simulation_router import router as simulation_router
@@ -21,18 +22,12 @@ from app.routers.simulation_router import router as simulation_router
 Base.metadata.create_all(bind=engine)
 
 
-# -------------------------------------------------------------------
-# App
-# -------------------------------------------------------------------
 app = FastAPI(
     title="Lieferkette Optimierungsplattform API",
-    version="0.5.0"
+    version="0.6.0"
 )
 
 
-# -------------------------------------------------------------------
-# CORS
-# -------------------------------------------------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,23 +37,14 @@ app.add_middleware(
 )
 
 
-# -------------------------------------------------------------------
-# Existing API routers
-# -------------------------------------------------------------------
 app.include_router(optimize_router)
 app.include_router(simulation_router)
 app.include_router(ai_router)
 
 
-# -------------------------------------------------------------------
-# Static dashboard
-# -------------------------------------------------------------------
 app.mount("/dashboard", StaticFiles(directory="dashboard", html=True), name="dashboard")
 
 
-# -------------------------------------------------------------------
-# Auth config
-# -------------------------------------------------------------------
 SECRET_KEY = "change-this-secret-key-in-production"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
@@ -67,9 +53,6 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 
-# -------------------------------------------------------------------
-# Pydantic models
-# -------------------------------------------------------------------
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
@@ -91,9 +74,6 @@ class UserInDB(UserResponse):
     hashed_password: str
 
 
-# -------------------------------------------------------------------
-# Helper functions
-# -------------------------------------------------------------------
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
@@ -157,9 +137,6 @@ async def get_current_user(
     return user
 
 
-# -------------------------------------------------------------------
-# Root / Health
-# -------------------------------------------------------------------
 @app.get("/")
 def root():
     return {"status": "ok", "message": "API is running"}
@@ -170,9 +147,6 @@ def health():
     return {"ok": True}
 
 
-# -------------------------------------------------------------------
-# Auth endpoints
-# -------------------------------------------------------------------
 @app.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     email = payload.email.lower().strip()
