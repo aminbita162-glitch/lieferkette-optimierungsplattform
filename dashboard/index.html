@@ -4,12 +4,25 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Logistics Dashboard</title>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  />
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
   <style>
     :root{
       --bg:#f3f6fb;
       --panel:#ffffff;
-      --panel-2:#f8fafc;
       --text:#0f172a;
       --muted:#64748b;
       --border:#e2e8f0;
@@ -23,6 +36,7 @@
     }
 
     *{box-sizing:border-box}
+
     body{
       margin:0;
       font-family:Arial,sans-serif;
@@ -176,10 +190,6 @@
       font-weight:700;
     }
 
-    .muted{
-      color:var(--muted);
-    }
-
     .grid-2{
       display:grid;
       grid-template-columns:1fr 1fr;
@@ -306,6 +316,18 @@
       height:340px;
     }
 
+    .map-box{
+      height:420px;
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+    }
+
+    #logisticsMap{
+      width:100%;
+      height:100%;
+    }
+
     .helper{
       font-size:13px;
       color:var(--muted);
@@ -313,11 +335,30 @@
       margin-top:8px;
     }
 
-    .section-divider{
-      height:1px;
-      background:var(--border);
-      margin:18px 0;
+    .legend{
+      display:flex;
+      gap:16px;
+      flex-wrap:wrap;
+      margin-top:12px;
+      font-size:13px;
+      color:#334155;
     }
+
+    .legend-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .legend-dot{
+      width:12px;
+      height:12px;
+      border-radius:999px;
+      display:inline-block;
+    }
+
+    .dot-warehouse{background:#2563eb}
+    .dot-order{background:#dc2626}
 
     @media(max-width:1200px){
       .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -351,6 +392,7 @@
         <button class="nav-item" type="button">Orders</button>
         <button class="nav-item" type="button">Warehouses</button>
         <button class="nav-item" type="button">Optimization</button>
+        <button class="nav-item" type="button">Map</button>
       </div>
 
       <div class="nav-group">
@@ -475,6 +517,28 @@
 
             <div id="ordersEmpty" class="empty">No order data loaded.</div>
           </section>
+
+          <section class="card">
+            <div class="card-title">Logistics Map</div>
+            <div class="card-subtitle">
+              Live warehouse and order locations displayed on an interactive map.
+            </div>
+
+            <div class="map-box">
+              <div id="logisticsMap"></div>
+            </div>
+
+            <div class="legend">
+              <div class="legend-item">
+                <span class="legend-dot dot-warehouse"></span>
+                <span>Warehouse</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-order"></span>
+                <span>Order</span>
+              </div>
+            </div>
+          </section>
         </div>
 
         <div class="stack">
@@ -566,6 +630,9 @@
     const API_BASE_URL = "https://lieferkette-optimierungsplattform.onrender.com";
     let accessToken = localStorage.getItem("dashboard_access_token") || "";
     let summaryChart = null;
+    let logisticsMap = null;
+    let logisticsMarkers = [];
+    let logisticsLines = [];
 
     const state = {
       profile: null,
@@ -597,6 +664,118 @@
       }else{
         authInfo.textContent = "Not authenticated.";
       }
+    }
+
+    function createWarehouseIcon(){
+      return L.divIcon({
+        html: '<div style="background:#2563eb;width:14px;height:14px;border-radius:999px;border:3px solid #ffffff;box-shadow:0 0 0 2px rgba(37,99,235,0.25);"></div>',
+        className: '',
+        iconSize: [20,20],
+        iconAnchor: [10,10]
+      });
+    }
+
+    function createOrderIcon(){
+      return L.divIcon({
+        html: '<div style="background:#dc2626;width:14px;height:14px;border-radius:999px;border:3px solid #ffffff;box-shadow:0 0 0 2px rgba(220,38,38,0.25);"></div>',
+        className: '',
+        iconSize: [20,20],
+        iconAnchor: [10,10]
+      });
+    }
+
+    function initMap(){
+      if(logisticsMap) return;
+
+      logisticsMap = L.map("logisticsMap").setView([52.52, 13.40], 6);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(logisticsMap);
+    }
+
+    function clearMapObjects(){
+      logisticsMarkers.forEach(marker => logisticsMap.removeLayer(marker));
+      logisticsMarkers = [];
+
+      logisticsLines.forEach(line => logisticsMap.removeLayer(line));
+      logisticsLines = [];
+    }
+
+    function renderMap(){
+      initMap();
+      clearMapObjects();
+
+      const points = [];
+
+      state.warehouses.forEach(warehouse => {
+        const marker = L.marker(
+          [warehouse.latitude, warehouse.longitude],
+          { icon: createWarehouseIcon() }
+        ).addTo(logisticsMap);
+
+        marker.bindPopup(`
+          <strong>Warehouse</strong><br>
+          ${warehouse.name}<br>
+          Capacity: ${warehouse.capacity}<br>
+          ID: ${warehouse.id}
+        `);
+
+        logisticsMarkers.push(marker);
+        points.push([warehouse.latitude, warehouse.longitude]);
+      });
+
+      state.orders.forEach(order => {
+        const marker = L.marker(
+          [order.latitude, order.longitude],
+          { icon: createOrderIcon() }
+        ).addTo(logisticsMap);
+
+        marker.bindPopup(`
+          <strong>Order</strong><br>
+          ${order.description || "No description"}<br>
+          Demand: ${order.demand}<br>
+          Status: ${order.status}<br>
+          Warehouse: ${order.assigned_warehouse_name || "-"}
+        `);
+
+        logisticsMarkers.push(marker);
+        points.push([order.latitude, order.longitude]);
+
+        const matchedWarehouse = state.warehouses.find(
+          warehouse => warehouse.name === order.assigned_warehouse_name
+        );
+
+        if(matchedWarehouse){
+          const line = L.polyline(
+            [
+              [matchedWarehouse.latitude, matchedWarehouse.longitude],
+              [order.latitude, order.longitude]
+            ],
+            {
+              color: "#2563eb",
+              weight: 3,
+              opacity: 0.65,
+              dashArray: "8, 8"
+            }
+          ).addTo(logisticsMap);
+
+          logisticsLines.push(line);
+        }
+      });
+
+      if(points.length === 0){
+        logisticsMap.setView([52.52, 13.40], 6);
+        return;
+      }
+
+      if(points.length === 1){
+        logisticsMap.setView(points[0], 10);
+        return;
+      }
+
+      logisticsMap.fitBounds(points, { padding: [30, 30] });
     }
 
     async function login(){
@@ -682,6 +861,7 @@
       renderWarehouses();
       renderKpis();
       renderChart();
+      renderMap();
     }
 
     async function loadOrders(){
@@ -690,6 +870,7 @@
       renderOrders();
       renderKpis();
       renderChart();
+      renderMap();
     }
 
     async function loadAllData(){
@@ -831,6 +1012,7 @@
       state.profile = null;
       localStorage.removeItem("dashboard_access_token");
       updateAuthInfo();
+      renderMap();
       showStatus("Logged out.", "info");
     }
 
@@ -878,11 +1060,13 @@
 
     document.getElementById("logoutButton").onclick = logout;
 
+    initMap();
     updateAuthInfo();
     renderKpis();
     renderWarehouses();
     renderOrders();
     renderChart();
+    renderMap();
 
     if(accessToken){
       loadProfile()
