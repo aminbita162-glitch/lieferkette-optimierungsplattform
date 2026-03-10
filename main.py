@@ -21,12 +21,10 @@ from app.routers.simulation_router import router as simulation_router
 
 Base.metadata.create_all(bind=engine)
 
-
 app = FastAPI(
     title="Lieferkette Optimierungsplattform API",
-    version="0.6.0"
+    version="0.7.0"
 )
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,14 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-app.include_router(optimize_router)
-app.include_router(simulation_router)
-app.include_router(ai_router)
-
-
 app.mount("/dashboard", StaticFiles(directory="dashboard", html=True), name="dashboard")
-
 
 SECRET_KEY = "change-this-secret-key-in-production"
 ALGORITHM = "HS256"
@@ -135,6 +126,15 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+from app.routers.warehouse_router import router as warehouse_router
+
+
+app.include_router(optimize_router)
+app.include_router(simulation_router)
+app.include_router(ai_router)
+app.include_router(warehouse_router)
 
 
 @app.get("/")
