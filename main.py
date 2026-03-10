@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models.user import User
+from app.models.warehouse import Warehouse
 from app.routers.ai_router import router as ai_router
 from app.routers.optimize import router as optimize_router
 from app.routers.simulation_router import router as simulation_router
@@ -25,7 +26,7 @@ Base.metadata.create_all(bind=engine)
 # -------------------------------------------------------------------
 app = FastAPI(
     title="Lieferkette Optimierungsplattform API",
-    version="0.4.0"
+    version="0.5.0"
 )
 
 
