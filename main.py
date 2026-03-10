@@ -21,11 +21,21 @@ from app.routers.warehouse_router import router as warehouse_router
 from app.routers.order_router import router as order_router
 
 
+# ---------------------------------
+# Database init
+# ---------------------------------
+# Important:
+# We recreate only the orders table once so the updated schema
+# (including nullable optimized_route) is applied in Render DB.
+Order.__table__.drop(bind=engine, checkfirst=True)
+Order.__table__.create(bind=engine, checkfirst=True)
+
 Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI(
     title="Lieferkette Optimierungsplattform API",
-    version="0.8.0"
+    version="0.8.1"
 )
 
 app.add_middleware(
