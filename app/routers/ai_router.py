@@ -6,6 +6,9 @@ from app.services.warehouse_ai import allocate_warehouse
 router = APIRouter(prefix="/ai", tags=["AI Logistics"])
 
 
+# ---------------------------------
+# Demand Forecast Endpoint
+# ---------------------------------
 @router.post("/forecast")
 def demand_forecast_endpoint(data: dict):
 
@@ -18,6 +21,9 @@ def demand_forecast_endpoint(data: dict):
     }
 
 
+# ---------------------------------
+# Route Optimization Endpoint
+# ---------------------------------
 @router.post("/route-optimize")
 def route_optimize_endpoint(data: dict):
 
@@ -30,6 +36,9 @@ def route_optimize_endpoint(data: dict):
     }
 
 
+# ---------------------------------
+# Warehouse Allocation Endpoint
+# ---------------------------------
 @router.post("/warehouse-allocate")
 def warehouse_allocate_endpoint(data: dict):
 
