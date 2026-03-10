@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Dict, Optional
+from typing import Optional
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,10 +8,16 @@ from fastapi.staticfiles import StaticFiles
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 
+from app.database import Base, engine, get_db
+from app.models.user import User
+from app.routers.ai_router import router as ai_router
 from app.routers.optimize import router as optimize_router
 from app.routers.simulation_router import router as simulation_router
-from app.routers.ai_router import router as ai_router
+
+
+Base.metadata.create_all(bind=engine)
 
 
 # -------------------------------------------------------------------
@@ -19,7 +25,7 @@ from app.routers.ai_router import router as ai_router
 # -------------------------------------------------------------------
 app = FastAPI(
     title="Lieferkette Optimierungsplattform API",
-    version="0.3.0"
+    version="0.4.0"
 )
 
 
@@ -61,15 +67,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 
 # -------------------------------------------------------------------
-# In-memory user store
-# NOTE:
-# This is suitable for the first SaaS step and testing.
-# Later this should be replaced with a real database.
-# -------------------------------------------------------------------
-fake_users_db: Dict[str, Dict[str, str]] = {}
-
-
-# -------------------------------------------------------------------
 # Pydantic models
 # -------------------------------------------------------------------
 class RegisterRequest(BaseModel):
@@ -104,15 +101,21 @@ def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 
-def get_user(email: str) -> Optional[UserInDB]:
-    user = fake_users_db.get(email.lower())
+def get_user(email: str, db: Session) -> Optional[UserInDB]:
+    user = db.query(User).filter(User.email == email.lower()).first()
     if not user:
         return None
-    return UserInDB(**user)
+
+    return UserInDB(
+        email=user.email,
+        full_name=user.full_name,
+        disabled=user.disabled,
+        hashed_password=user.hashed_password,
+    )
 
 
-def authenticate_user(email: str, password: str) -> Optional[UserInDB]:
-    user = get_user(email)
+def authenticate_user(email: str, password: str, db: Session) -> Optional[UserInDB]:
+    user = get_user(email, db)
     if not user:
         return None
     if not verify_password(password, user.hashed_password):
@@ -125,11 +128,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     expire = datetime.now(timezone.utc) + (
         expires_delta if expires_delta else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "iat": datetime.now(timezone.utc)})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> UserInDB:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -144,7 +150,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
     except JWTError:
         raise credentials_exception
 
-    user = get_user(email)
+    user = get_user(email, db)
     if user is None:
         raise credentials_exception
     return user
@@ -167,7 +173,7 @@ def health():
 # Auth endpoints
 # -------------------------------------------------------------------
 @app.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterRequest):
+def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     email = payload.email.lower().strip()
 
     if len(payload.password) < 8:
@@ -176,31 +182,37 @@ def register(payload: RegisterRequest):
             detail="Password must be at least 8 characters long"
         )
 
-    if email in fake_users_db:
+    existing_user = db.query(User).filter(User.email == email).first()
+    if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already exists"
         )
 
-    user_record = {
-        "email": email,
-        "full_name": payload.full_name,
-        "disabled": False,
-        "hashed_password": get_password_hash(payload.password),
-    }
-
-    fake_users_db[email] = user_record
-
-    return UserResponse(
+    new_user = User(
         email=email,
         full_name=payload.full_name,
-        disabled=False
+        hashed_password=get_password_hash(payload.password),
+        disabled=False,
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return UserResponse(
+        email=new_user.email,
+        full_name=new_user.full_name,
+        disabled=new_user.disabled
     )
 
 
 @app.post("/login", response_model=TokenResponse)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username.lower().strip(), form_data.password)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db)
+):
+    user = authenticate_user(form_data.username.lower().strip(), form_data.password, db)
 
     if not user:
         raise HTTPException(
