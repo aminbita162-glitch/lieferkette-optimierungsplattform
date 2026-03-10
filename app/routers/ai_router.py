@@ -52,3 +52,30 @@ def warehouse_allocate_endpoint(data: dict):
         "warehouses": warehouses,
         "allocation": result
     }
+
+
+# ---------------------------------
+# AI Logistics Decision Engine
+# ---------------------------------
+@router.post("/logistics-plan")
+def logistics_plan(data: dict):
+
+    order_location = data.get("order_location", {})
+    warehouses = data.get("warehouses", [])
+    distance_matrix = data.get("distance_matrix", [])
+    demand_history = data.get("demand_history", [])
+
+    # 1️⃣ Forecast demand
+    forecast = forecast_demand(demand_history)
+
+    # 2️⃣ Choose best warehouse
+    warehouse_result = allocate_warehouse(order_location, warehouses)
+
+    # 3️⃣ Optimize delivery route
+    route = optimize_route(distance_matrix)
+
+    return {
+        "forecast": forecast,
+        "warehouse_selection": warehouse_result,
+        "optimized_route": route
+    }
