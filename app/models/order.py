@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
+from sqlalchemy import Column, Integer, Float, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from app.database import Base
 
@@ -16,9 +17,14 @@ class Order(Base):
 
     demand = Column(Integer, nullable=False)
 
-    warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=True)
+    status = Column(String, default="pending", nullable=False)
+    assigned_warehouse_name = Column(String, nullable=True)
+    optimized_route = Column(String, nullable=True)
 
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     warehouse = relationship("Warehouse")
     owner = relationship("User")
