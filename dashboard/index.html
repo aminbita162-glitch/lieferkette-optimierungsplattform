@@ -710,6 +710,8 @@
       const points = [];
 
       state.warehouses.forEach(warehouse => {
+        if (warehouse.latitude == null || warehouse.longitude == null) return;
+
         const marker = L.marker(
           [warehouse.latitude, warehouse.longitude],
           { icon: createWarehouseIcon() }
@@ -727,6 +729,8 @@
       });
 
       state.orders.forEach(order => {
+        if (order.latitude == null || order.longitude == null) return;
+
         const marker = L.marker(
           [order.latitude, order.longitude],
           { icon: createOrderIcon() }
@@ -744,7 +748,9 @@
         points.push([order.latitude, order.longitude]);
 
         const matchedWarehouse = state.warehouses.find(
-          warehouse => warehouse.name === order.assigned_warehouse_name
+          warehouse =>
+            warehouse.id === order.warehouse_id ||
+            warehouse.name === order.assigned_warehouse_name
         );
 
         if(matchedWarehouse){
@@ -994,17 +1000,25 @@
         throw new Error("Please login first.");
       }
 
+      const warehouseIdRaw = document.getElementById("orderWarehouseId").value.trim();
+
       const payload = {
         description: document.getElementById("orderDescription").value.trim(),
         latitude: Number(document.getElementById("orderLatitude").value),
         longitude: Number(document.getElementById("orderLongitude").value),
         demand: Number(document.getElementById("orderDemand").value),
-        warehouse_id: Number(document.getElementById("orderWarehouseId").value)
+        warehouse_id: warehouseIdRaw === "" ? null : Number(warehouseIdRaw)
       };
 
       await apiPost("/orders/", payload);
-      showStatus("Order created successfully.", "success");
+      showStatus(
+        payload.warehouse_id === null
+          ? "Order created successfully with AI warehouse allocation."
+          : "Order created successfully.",
+        "success"
+      );
       await loadOrders();
+      await loadWarehouses();
     }
 
     function logout(){
