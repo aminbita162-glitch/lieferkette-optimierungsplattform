@@ -359,6 +359,7 @@
 
     .dot-warehouse{background:#2563eb}
     .dot-order{background:#dc2626}
+    .dot-route{background:#0f766e}
 
     @media(max-width:1200px){
       .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -413,6 +414,7 @@
 
         <div class="top-actions">
           <button id="refreshAllButton" class="btn-secondary" type="button">Refresh Data</button>
+          <button id="optimizeRoutesButton" class="btn-accent" type="button">Optimize Routes</button>
           <button id="logoutButton" class="btn-danger" type="button">Logout</button>
         </div>
       </div>
@@ -537,6 +539,10 @@
                 <span class="legend-dot dot-order"></span>
                 <span>Order</span>
               </div>
+              <div class="legend-item">
+                <span class="legend-dot dot-route"></span>
+                <span>Optimized Route</span>
+              </div>
             </div>
           </section>
         </div>
@@ -644,11 +650,13 @@
     let logisticsMap = null;
     let logisticsMarkers = [];
     let logisticsLines = [];
+    let optimizedRouteLines = [];
 
     const state = {
       profile: null,
       warehouses: [],
-      orders: []
+      orders: [],
+      routeGroups: []
     };
 
     function showStatus(message, type = "info"){
@@ -680,7 +688,6 @@
     function sanitizeWarehouseIdInput(){
       const input = document.getElementById("orderWarehouseId");
       if(!input) return;
-
       input.value = String(input.value || "").replace(/[^\d]/g, "");
     }
 
@@ -719,6 +726,9 @@
 
       logisticsLines.forEach(line => logisticsMap.removeLayer(line));
       logisticsLines = [];
+
+      optimizedRouteLines.forEach(line => logisticsMap.removeLayer(line));
+      optimizedRouteLines = [];
     }
 
     function renderMap(){
@@ -780,12 +790,39 @@
             {
               color: "#2563eb",
               weight: 3,
-              opacity: 0.65,
+              opacity: 0.35,
               dashArray: "8, 8"
             }
           ).addTo(logisticsMap);
 
           logisticsLines.push(line);
+        }
+      });
+
+      state.routeGroups.forEach(group => {
+        if(!group || !group.ordered_stops || group.ordered_stops.length < 2){
+          return;
+        }
+
+        const routePoints = [];
+
+        group.ordered_stops.forEach(stop => {
+          if(stop.latitude == null || stop.longitude == null) return;
+          routePoints.push([stop.latitude, stop.longitude]);
+          points.push([stop.latitude, stop.longitude]);
+        });
+
+        if(routePoints.length >= 2){
+          const routeLine = L.polyline(
+            routePoints,
+            {
+              color: "#0f766e",
+              weight: 4,
+              opacity: 0.9
+            }
+          ).addTo(logisticsMap);
+
+          optimizedRouteLines.push(routeLine);
         }
       });
 
@@ -850,7 +887,7 @@
       return data;
     }
 
-    async function apiPost(path, payload){
+    async function apiPost(path, payload = {}){
       const response = await fetch(`${API_BASE_URL}${path}`, {
         method: "POST",
         headers: {
@@ -897,9 +934,38 @@
       renderMap();
     }
 
+    async function optimizeRoutes(){
+      if(!accessToken){
+        throw new Error("Please login first.");
+      }
+
+      const data = await apiPost("/routes/optimize", {});
+      state.routeGroups = data.route_groups || [];
+      renderMap();
+
+      if(state.routeGroups.length){
+        showStatus("Optimized route loaded on map.", "success");
+      }else{
+        showStatus(data.message || "No route data available.", "info");
+      }
+    }
+
     async function loadAllData(){
       await loadWarehouses();
       await loadOrders();
+
+      if(accessToken){
+        try{
+          const routeData = await apiPost("/routes/optimize", {});
+          state.routeGroups = routeData.route_groups || [];
+        }catch(error){
+          state.routeGroups = [];
+        }
+      }else{
+        state.routeGroups = [];
+      }
+
+      renderMap();
     }
 
     function renderWarehouses(){
@@ -1011,6 +1077,7 @@
       await apiPost("/warehouses/", payload);
       showStatus("Warehouse created successfully.", "success");
       await loadWarehouses();
+      await optimizeRoutes().catch(() => {});
     }
 
     async function createOrder(){
@@ -1061,14 +1128,21 @@
       document.getElementById("orderWarehouseId").value = "";
 
       await loadOrders();
-      await loadWarehouses();
+      await optimizeRoutes().catch(() => {});
     }
 
     function logout(){
       accessToken = "";
       state.profile = null;
+      state.warehouses = [];
+      state.orders = [];
+      state.routeGroups = [];
       localStorage.removeItem("dashboard_access_token");
       updateAuthInfo();
+      renderWarehouses();
+      renderOrders();
+      renderKpis();
+      renderChart();
       renderMap();
       showStatus("Logged out.", "info");
     }
@@ -1096,6 +1170,14 @@
         showStatus("Dashboard data refreshed.", "success");
       }catch(error){
         showStatus(error.message || "Refresh failed.", "error");
+      }
+    };
+
+    document.getElementById("optimizeRoutesButton").onclick = async () => {
+      try{
+        await optimizeRoutes();
+      }catch(error){
+        showStatus(error.message || "Route optimization failed.", "error");
       }
     };
 
