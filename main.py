@@ -19,6 +19,7 @@ from app.routers.optimize import router as optimize_router
 from app.routers.simulation_router import router as simulation_router
 from app.routers.warehouse_router import router as warehouse_router
 from app.routers.order_router import router as order_router
+from app.routers.route_router import router as route_router
 
 
 # ---------------------------------
@@ -145,6 +146,7 @@ app.include_router(simulation_router)
 app.include_router(ai_router)
 app.include_router(warehouse_router)
 app.include_router(order_router)
+app.include_router(route_router)
 
 
 @app.get("/")
