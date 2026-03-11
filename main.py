@@ -25,12 +25,6 @@ from app.routers.route_router import router as route_router
 # ---------------------------------
 # Database init
 # ---------------------------------
-# Important:
-# We recreate only the orders table once so the updated schema
-# (including nullable optimized_route) is applied in Render DB.
-Order.__table__.drop(bind=engine, checkfirst=True)
-Order.__table__.create(bind=engine, checkfirst=True)
-
 Base.metadata.create_all(bind=engine)
 
 
