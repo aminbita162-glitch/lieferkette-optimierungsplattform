@@ -361,6 +361,16 @@
     .dot-order{background:#dc2626}
     .dot-route{background:#0f766e}
 
+    .result-box{
+      margin-top:14px;
+      padding:14px 16px;
+      border:1px solid var(--border);
+      border-radius:12px;
+      background:#f8fafc;
+      line-height:1.8;
+      font-size:14px;
+    }
+
     @media(max-width:1200px){
       .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
       .layout{grid-template-columns:1fr}
@@ -636,6 +646,59 @@
             </div>
             <div class="chart-box">
               <canvas id="summaryChart"></canvas>
+            </div>
+          </section>
+
+          <section class="card">
+            <div class="card-title">Inventory Optimization</div>
+            <div class="card-subtitle">
+              AI engine calculating reorder points and recommended order quantities.
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Service Level</label>
+                <input id="optServiceLevel" type="number" step="0.01" value="0.95" />
+              </div>
+              <div class="field">
+                <label>Holding Cost</label>
+                <input id="optHoldingCost" type="number" step="0.1" value="2.5" />
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Shortage Cost</label>
+                <input id="optShortageCost" type="number" step="1" value="10" />
+              </div>
+              <div class="field">
+                <label>Forecast Demand</label>
+                <input id="optForecastDemand" type="number" step="1" value="120" />
+              </div>
+            </div>
+
+            <div class="grid-2">
+              <div class="field">
+                <label>Current Inventory</label>
+                <input id="optCurrentInventory" type="number" step="1" value="80" />
+              </div>
+              <div class="field">
+                <label>Demand Std</label>
+                <input id="optDemandStd" type="number" step="1" value="15" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Lead Time Days</label>
+              <input id="optLeadTime" type="number" step="1" value="7" />
+            </div>
+
+            <div class="actions">
+              <button id="runOptimizationButton" class="btn-accent" type="button">Run Optimization</button>
+            </div>
+
+            <div id="optimizationResult" class="result-box">
+              No optimization result yet.
             </div>
           </section>
         </div>
@@ -950,6 +1013,50 @@
       }
     }
 
+    async function runOptimization(){
+      const serviceLevel = parseFloat(document.getElementById("optServiceLevel").value);
+      const holdingCost = parseFloat(document.getElementById("optHoldingCost").value);
+      const shortageCost = parseFloat(document.getElementById("optShortageCost").value);
+      const forecastDemand = parseFloat(document.getElementById("optForecastDemand").value);
+      const currentInventory = parseFloat(document.getElementById("optCurrentInventory").value);
+      const demandStd = parseFloat(document.getElementById("optDemandStd").value);
+      const leadTime = parseInt(document.getElementById("optLeadTime").value, 10);
+
+      const payload = {
+        service_level: serviceLevel,
+        holding_cost: holdingCost,
+        shortage_cost: shortageCost,
+        demand: [
+          {
+            product_id: "SKU-001",
+            forecast_demand: forecastDemand,
+            current_inventory: currentInventory,
+            demand_std: demandStd,
+            lead_time_days: leadTime
+          }
+        ]
+      };
+
+      const result = await apiPost("/optimize", payload);
+
+      if(!result.recommendations || !result.recommendations.length){
+        document.getElementById("optimizationResult").innerHTML = "No optimization result returned.";
+        return;
+      }
+
+      const rec = result.recommendations[0];
+
+      document.getElementById("optimizationResult").innerHTML = `
+        <strong>Product:</strong> ${rec.product_id}<br>
+        <strong>Recommended Order Quantity:</strong> ${Number(rec.recommended_order_quantity).toFixed(2)}<br>
+        <strong>Safety Stock:</strong> ${Number(rec.safety_stock).toFixed(2)}<br>
+        <strong>Reorder Point:</strong> ${Number(rec.reorder_point).toFixed(2)}<br>
+        <strong>Expected Shortage:</strong> ${Number(rec.expected_shortage).toFixed(2)}<br>
+        <strong>Total Cost Item:</strong> ${Number(rec.total_cost_item).toFixed(2)}<br>
+        <strong>Total Cost:</strong> ${Number(result.total_cost).toFixed(2)}
+      `;
+    }
+
     async function loadAllData(){
       await loadWarehouses();
       await loadOrders();
@@ -1144,6 +1251,7 @@
       renderKpis();
       renderChart();
       renderMap();
+      document.getElementById("optimizationResult").innerHTML = "No optimization result yet.";
       showStatus("Logged out.", "info");
     }
 
@@ -1178,6 +1286,15 @@
         await optimizeRoutes();
       }catch(error){
         showStatus(error.message || "Route optimization failed.", "error");
+      }
+    };
+
+    document.getElementById("runOptimizationButton").onclick = async () => {
+      try{
+        await runOptimization();
+        showStatus("Inventory optimization completed.", "success");
+      }catch(error){
+        showStatus(error.message || "Optimization failed.", "error");
       }
     };
 
