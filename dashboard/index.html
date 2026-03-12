@@ -7,385 +7,239 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""
-  />
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-    crossorigin=""
-  ></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <style>
-    :root{
-      --bg:#f3f6fb;
-      --panel:#ffffff;
-      --text:#0f172a;
-      --muted:#64748b;
-      --border:#e2e8f0;
-      --primary:#111827;
-      --accent:#2563eb;
-      --success:#0f766e;
-      --danger:#dc2626;
-      --warning:#ca8a04;
-      --shadow:0 8px 30px rgba(15,23,42,.08);
-      --radius:18px;
+    :root {
+      --bg: #f3f6fb;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #111827;
+      --accent: #2563eb;
+      --success: #0f766e;
+      --danger: #dc2626;
+      --warning: #ca8a04;
+      --shadow: 0 8px 30px rgba(15,23,42,.08);
+      --radius: 18px;
     }
 
-    *{box-sizing:border-box}
+    * { box-sizing: border-box; }
 
-    body{
-      margin:0;
-      font-family:Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
 
-    .app{
-      display:grid;
-      grid-template-columns:260px 1fr;
-      min-height:100vh;
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
     }
 
-    .sidebar{
-      background:#0f172a;
-      color:#fff;
-      padding:28px 20px;
+    .sidebar {
+      background: #0f172a;
+      color: #fff;
+      padding: 28px 20px;
     }
 
-    .brand{
-      font-size:24px;
-      font-weight:700;
-      margin-bottom:8px;
+    .brand { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+    .brand-sub { color: #94a3b8; font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+
+    .nav-group { margin-bottom: 24px; }
+    .nav-title { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; margin-bottom: 12px; }
+
+    .nav-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: #e2e8f0;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
     }
 
-    .brand-sub{
-      color:#94a3b8;
-      font-size:14px;
-      margin-bottom:28px;
-      line-height:1.6;
+    .nav-item.active, .nav-item:hover { background: rgba(255,255,255,.08); }
+
+    .main { padding: 24px; }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
     }
 
-    .nav-group{
-      margin-bottom:24px;
+    .page-title { font-size: 32px; font-weight: 700; margin: 0; }
+    .page-subtitle { color: var(--muted); margin-top: 8px; font-size: 15px; }
+
+    .top-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    .layout { display: grid; grid-template-columns: 1.15fr .85fr; gap: 20px; }
+    .stack { display: flex; flex-direction: column; gap: 20px; }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
     }
 
-    .nav-title{
-      font-size:12px;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      color:#94a3b8;
-      margin-bottom:12px;
+    .card-title { font-size: 18px; font-weight: 700; margin: 0 0 8px 0; }
+    .card-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 18px; line-height: 1.6; }
+
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: var(--shadow);
     }
 
-    .nav-item{
-      display:block;
-      width:100%;
-      text-align:left;
-      background:transparent;
-      border:none;
-      color:#e2e8f0;
-      padding:12px 14px;
-      border-radius:12px;
-      margin-bottom:8px;
-      cursor:pointer;
-      font-size:14px;
-      font-weight:700;
+    .kpi-label { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    .kpi-value { font-size: 28px; font-weight: 700; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+
+    .field label { font-size: 13px; font-weight: 700; color: #334155; }
+
+    .field input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      background: #fff;
     }
 
-    .nav-item.active,
-    .nav-item:hover{
-      background:rgba(255,255,255,.08);
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
     }
 
-    .main{
-      padding:24px;
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: #e2e8f0; color: #0f172a; }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    .status-box {
+      display: none;
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
     }
 
-    .topbar{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:16px;
-      margin-bottom:24px;
-      flex-wrap:wrap;
+    .status-box.show { display: block; }
+    .status-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .status-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+    .status-info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+    .table-wrap { overflow: auto; border: 1px solid var(--border); border-radius: 14px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      background: #fff;
     }
 
-    .page-title{
-      font-size:32px;
-      font-weight:700;
-      margin:0;
+    th, td {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      font-size: 14px;
+      vertical-align: top;
     }
 
-    .page-subtitle{
-      color:var(--muted);
-      margin-top:8px;
-      font-size:15px;
+    th { background: #f8fafc; font-size: 13px; color: #334155; }
+
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
     }
 
-    .top-actions{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
+    .pill-planned { background: #ecfeff; color: #155e75; }
+    .pill-pending { background: #fff7ed; color: #9a3412; }
+
+    .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+
+    .chart-box { height: 340px; }
+
+    .map-box {
+      height: 420px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
     }
 
-    .layout{
-      display:grid;
-      grid-template-columns:1.15fr .85fr;
-      gap:20px;
+    #logisticsMap { width: 100%; height: 100%; }
+
+    .helper { font-size: 13px; color: var(--muted); line-height: 1.7; margin-top: 8px; }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #334155;
     }
 
-    .stack{
-      display:flex;
-      flex-direction:column;
-      gap:20px;
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
     }
 
-    .card{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:20px;
+    .dot-warehouse { background: #2563eb; }
+    .dot-order { background: #dc2626; }
+    .dot-route { background: #0f766e; }
+
+    @media (max-width: 1200px) {
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .layout { grid-template-columns: 1fr; }
     }
 
-    .card-title{
-      font-size:18px;
-      font-weight:700;
-      margin:0 0 8px 0;
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
     }
 
-    .card-subtitle{
-      color:var(--muted);
-      font-size:14px;
-      margin-bottom:18px;
-      line-height:1.6;
-    }
-
-    .kpis{
-      display:grid;
-      grid-template-columns:repeat(4,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .kpi{
-      background:var(--panel);
-      border:1px solid var(--border);
-      border-radius:16px;
-      padding:18px;
-      box-shadow:var(--shadow);
-    }
-
-    .kpi-label{
-      color:var(--muted);
-      font-size:13px;
-      margin-bottom:8px;
-    }
-
-    .kpi-value{
-      font-size:28px;
-      font-weight:700;
-    }
-
-    .grid-2{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:16px;
-    }
-
-    .field{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      margin-bottom:14px;
-    }
-
-    .field label{
-      font-size:13px;
-      font-weight:700;
-      color:#334155;
-    }
-
-    .field input{
-      width:100%;
-      padding:12px 14px;
-      border:1px solid var(--border);
-      border-radius:12px;
-      font-size:14px;
-      background:#fff;
-    }
-
-    .actions{
-      display:flex;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-top:8px;
-    }
-
-    button{
-      border:none;
-      border-radius:12px;
-      padding:12px 16px;
-      font-size:14px;
-      font-weight:700;
-      cursor:pointer;
-    }
-
-    .btn-primary{
-      background:var(--primary);
-      color:#fff;
-    }
-
-    .btn-secondary{
-      background:#e2e8f0;
-      color:#0f172a;
-    }
-
-    .btn-accent{
-      background:var(--accent);
-      color:#fff;
-    }
-
-    .btn-danger{
-      background:var(--danger);
-      color:#fff;
-    }
-
-    .status-box{
-      display:none;
-      margin-bottom:16px;
-      padding:14px 16px;
-      border-radius:12px;
-      font-size:14px;
-      font-weight:700;
-    }
-
-    .status-box.show{display:block}
-    .status-success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
-    .status-error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
-    .status-info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
-
-    .table-wrap{
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:14px;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width:720px;
-      background:#fff;
-    }
-
-    th,td{
-      padding:14px 12px;
-      border-bottom:1px solid var(--border);
-      text-align:left;
-      font-size:14px;
-      vertical-align:top;
-    }
-
-    th{
-      background:#f8fafc;
-      font-size:13px;
-      color:#334155;
-    }
-
-    .pill{
-      display:inline-block;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:700;
-    }
-
-    .pill-planned{background:#ecfeff;color:#155e75}
-    .pill-pending{background:#fff7ed;color:#9a3412}
-
-    .empty{
-      color:var(--muted);
-      font-size:14px;
-      padding:8px 0;
-    }
-
-    .chart-box{
-      height:340px;
-    }
-
-    .map-box{
-      height:420px;
-      border:1px solid var(--border);
-      border-radius:14px;
-      overflow:hidden;
-    }
-
-    #logisticsMap{
-      width:100%;
-      height:100%;
-    }
-
-    .helper{
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.7;
-      margin-top:8px;
-    }
-
-    .legend{
-      display:flex;
-      gap:16px;
-      flex-wrap:wrap;
-      margin-top:12px;
-      font-size:13px;
-      color:#334155;
-    }
-
-    .legend-item{
-      display:flex;
-      align-items:center;
-      gap:8px;
-    }
-
-    .legend-dot{
-      width:12px;
-      height:12px;
-      border-radius:999px;
-      display:inline-block;
-    }
-
-    .dot-warehouse{background:#2563eb}
-    .dot-order{background:#dc2626}
-    .dot-route{background:#0f766e}
-
-    .result-box{
-      margin-top:14px;
-      padding:14px 16px;
-      border:1px solid var(--border);
-      border-radius:12px;
-      background:#f8fafc;
-      line-height:1.8;
-      font-size:14px;
-    }
-
-    @media(max-width:1200px){
-      .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .layout{grid-template-columns:1fr}
-    }
-
-    @media(max-width:900px){
-      .app{grid-template-columns:1fr}
-      .sidebar{display:none}
-    }
-
-    @media(max-width:700px){
-      .kpis{grid-template-columns:1fr}
-      .grid-2{grid-template-columns:1fr}
-      .main{padding:16px}
-      .page-title{font-size:26px}
+    @media (max-width: 700px) {
+      .kpis { grid-template-columns: 1fr; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .main { padding: 16px; }
+      .page-title { font-size: 26px; }
     }
   </style>
 </head>
@@ -417,9 +271,7 @@
       <div class="topbar">
         <div>
           <h1 class="page-title">AI Logistics Dashboard</h1>
-          <div class="page-subtitle">
-            Live SaaS control panel connected to your backend APIs.
-          </div>
+          <div class="page-subtitle">Live SaaS control panel connected to your backend APIs.</div>
         </div>
 
         <div class="top-actions">
@@ -432,127 +284,60 @@
       <div id="statusBox" class="status-box"></div>
 
       <section class="kpis">
-        <div class="kpi">
-          <div class="kpi-label">Total Warehouses</div>
-          <div class="kpi-value" id="kpiWarehouses">0</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Total Orders</div>
-          <div class="kpi-value" id="kpiOrders">0</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Planned Orders</div>
-          <div class="kpi-value" id="kpiPlanned">0</div>
-        </div>
-        <div class="kpi">
-          <div class="kpi-label">Total Capacity</div>
-          <div class="kpi-value" id="kpiCapacity">0</div>
-        </div>
+        <div class="kpi"><div class="kpi-label">Total Warehouses</div><div class="kpi-value" id="kpiWarehouses">0</div></div>
+        <div class="kpi"><div class="kpi-label">Total Orders</div><div class="kpi-value" id="kpiOrders">0</div></div>
+        <div class="kpi"><div class="kpi-label">Planned Orders</div><div class="kpi-value" id="kpiPlanned">0</div></div>
+        <div class="kpi"><div class="kpi-label">Total Capacity</div><div class="kpi-value" id="kpiCapacity">0</div></div>
       </section>
 
       <div class="layout" style="margin-top:20px;">
         <div class="stack">
           <section class="card">
             <div class="card-title">Login</div>
-            <div class="card-subtitle">
-              Sign in with your platform account to load live warehouses and orders.
-            </div>
-
+            <div class="card-subtitle">Sign in with your platform account to load live warehouses and orders.</div>
             <div class="grid-2">
-              <div class="field">
-                <label>Email</label>
-                <input id="loginEmail" type="email" value="admin@test.com" />
-              </div>
-              <div class="field">
-                <label>Password</label>
-                <input id="loginPassword" type="password" value="admin123456" />
-              </div>
+              <div class="field"><label>Email</label><input id="loginEmail" type="email" value="admin@test.com" /></div>
+              <div class="field"><label>Password</label><input id="loginPassword" type="password" value="admin123456" /></div>
             </div>
-
             <div class="actions">
               <button id="loginButton" class="btn-primary" type="button">Login</button>
               <button id="loadProfileButton" class="btn-secondary" type="button">Load Profile</button>
             </div>
-
-            <div class="helper" id="authInfo">
-              Not authenticated.
-            </div>
+            <div class="helper" id="authInfo">Not authenticated.</div>
           </section>
 
           <section class="card">
             <div class="card-title">Warehouses</div>
-            <div class="card-subtitle">
-              Live warehouse data from your backend.
-            </div>
-
+            <div class="card-subtitle">Live warehouse data from your backend.</div>
             <div class="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
-                    <th>Capacity</th>
-                    <th>Owner</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>ID</th><th>Name</th><th>Latitude</th><th>Longitude</th><th>Capacity</th><th>Owner</th></tr></thead>
                 <tbody id="warehousesTableBody"></tbody>
               </table>
             </div>
-
             <div id="warehousesEmpty" class="empty">No warehouse data loaded.</div>
           </section>
 
           <section class="card">
             <div class="card-title">Orders</div>
-            <div class="card-subtitle">
-              Live orders with assigned warehouses and planning state.
-            </div>
-
+            <div class="card-subtitle">Live orders with assigned warehouses and planning state.</div>
             <div class="table-wrap">
               <table>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Description</th>
-                    <th>Demand</th>
-                    <th>Status</th>
-                    <th>Warehouse</th>
-                    <th>Latitude</th>
-                    <th>Longitude</th>
-                  </tr>
-                </thead>
+                <thead><tr><th>ID</th><th>Description</th><th>Demand</th><th>Status</th><th>Warehouse</th><th>Latitude</th><th>Longitude</th></tr></thead>
                 <tbody id="ordersTableBody"></tbody>
               </table>
             </div>
-
             <div id="ordersEmpty" class="empty">No order data loaded.</div>
           </section>
 
           <section class="card">
             <div class="card-title">Logistics Map</div>
-            <div class="card-subtitle">
-              Live warehouse and order locations displayed on an interactive map.
-            </div>
-
-            <div class="map-box">
-              <div id="logisticsMap"></div>
-            </div>
-
+            <div class="card-subtitle">Live warehouse and order locations displayed on an interactive map.</div>
+            <div class="map-box"><div id="logisticsMap"></div></div>
             <div class="legend">
-              <div class="legend-item">
-                <span class="legend-dot dot-warehouse"></span>
-                <span>Warehouse</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot dot-order"></span>
-                <span>Order</span>
-              </div>
-              <div class="legend-item">
-                <span class="legend-dot dot-route"></span>
-                <span>Optimized Route</span>
-              </div>
+              <div class="legend-item"><span class="legend-dot dot-warehouse"></span><span>Warehouse</span></div>
+              <div class="legend-item"><span class="legend-dot dot-order"></span><span>Order</span></div>
+              <div class="legend-item"><span class="legend-dot dot-route"></span><span>Optimized Route</span></div>
             </div>
           </section>
         </div>
@@ -560,63 +345,26 @@
         <div class="stack">
           <section class="card">
             <div class="card-title">Create Warehouse</div>
-            <div class="card-subtitle">
-              Add a warehouse directly from the dashboard.
-            </div>
-
-            <div class="field">
-              <label>Name</label>
-              <input id="warehouseName" type="text" placeholder="Berlin Warehouse" />
-            </div>
-
+            <div class="card-subtitle">Add a warehouse directly from the dashboard.</div>
+            <div class="field"><label>Name</label><input id="warehouseName" type="text" placeholder="Berlin Warehouse" /></div>
             <div class="grid-2">
-              <div class="field">
-                <label>Latitude</label>
-                <input id="warehouseLatitude" type="number" step="0.01" placeholder="52.50" />
-              </div>
-              <div class="field">
-                <label>Longitude</label>
-                <input id="warehouseLongitude" type="number" step="0.01" placeholder="13.39" />
-              </div>
+              <div class="field"><label>Latitude</label><input id="warehouseLatitude" type="number" step="0.01" placeholder="52.50" /></div>
+              <div class="field"><label>Longitude</label><input id="warehouseLongitude" type="number" step="0.01" placeholder="13.39" /></div>
             </div>
-
-            <div class="field">
-              <label>Capacity</label>
-              <input id="warehouseCapacity" type="number" step="1" placeholder="100" />
-            </div>
-
-            <div class="actions">
-              <button id="createWarehouseButton" class="btn-accent" type="button">Create Warehouse</button>
-            </div>
+            <div class="field"><label>Capacity</label><input id="warehouseCapacity" type="number" step="1" placeholder="100" /></div>
+            <div class="actions"><button id="createWarehouseButton" class="btn-accent" type="button">Create Warehouse</button></div>
           </section>
 
           <section class="card">
             <div class="card-title">Create Order</div>
-            <div class="card-subtitle">
-              Create a delivery order and assign it to a warehouse.
-            </div>
-
-            <div class="field">
-              <label>Description</label>
-              <input id="orderDescription" type="text" placeholder="Delivery Berlin" />
-            </div>
-
+            <div class="card-subtitle">Create a delivery order and assign it to a warehouse.</div>
+            <div class="field"><label>Description</label><input id="orderDescription" type="text" placeholder="Delivery Berlin" /></div>
             <div class="grid-2">
-              <div class="field">
-                <label>Latitude</label>
-                <input id="orderLatitude" type="number" step="0.01" placeholder="52.52" />
-              </div>
-              <div class="field">
-                <label>Longitude</label>
-                <input id="orderLongitude" type="number" step="0.01" placeholder="13.40" />
-              </div>
+              <div class="field"><label>Latitude</label><input id="orderLatitude" type="number" step="0.01" placeholder="52.52" /></div>
+              <div class="field"><label>Longitude</label><input id="orderLongitude" type="number" step="0.01" placeholder="13.40" /></div>
             </div>
-
             <div class="grid-2">
-              <div class="field">
-                <label>Demand</label>
-                <input id="orderDemand" type="number" step="1" placeholder="20" />
-              </div>
+              <div class="field"><label>Demand</label><input id="orderDemand" type="number" step="1" placeholder="20" /></div>
               <div class="field">
                 <label>Warehouse ID</label>
                 <input
@@ -633,73 +381,62 @@
                 />
               </div>
             </div>
-
-            <div class="actions">
-              <button id="createOrderButton" class="btn-primary" type="button">Create Order</button>
-            </div>
+            <div class="actions"><button id="createOrderButton" class="btn-primary" type="button">Create Order</button></div>
           </section>
 
           <section class="card">
             <div class="card-title">Optimization Snapshot</div>
-            <div class="card-subtitle">
-              Compare warehouse capacities vs order demand.
-            </div>
-            <div class="chart-box">
-              <canvas id="summaryChart"></canvas>
-            </div>
+            <div class="card-subtitle">Compare warehouse capacities vs order demand.</div>
+            <div class="chart-box"><canvas id="summaryChart"></canvas></div>
           </section>
 
           <section class="card">
             <div class="card-title">Inventory Optimization</div>
-            <div class="card-subtitle">
-              AI engine calculating reorder points and recommended order quantities.
+            <div class="card-subtitle">Professional AI inventory planning with service level, cost inputs, and recommendation output.</div>
+
+            <div class="grid-2">
+              <div class="field"><label>Product ID</label><input id="optProductId" type="text" value="SKU-001" /></div>
+              <div class="field"><label>Service Level</label><input id="optServiceLevel" type="number" step="0.01" value="0.95" /></div>
             </div>
 
             <div class="grid-2">
-              <div class="field">
-                <label>Service Level</label>
-                <input id="optServiceLevel" type="number" step="0.01" value="0.95" />
-              </div>
-              <div class="field">
-                <label>Holding Cost</label>
-                <input id="optHoldingCost" type="number" step="0.1" value="2.5" />
-              </div>
+              <div class="field"><label>Holding Cost</label><input id="optHoldingCost" type="number" step="0.1" value="2.5" /></div>
+              <div class="field"><label>Shortage Cost</label><input id="optShortageCost" type="number" step="0.1" value="10" /></div>
             </div>
 
             <div class="grid-2">
-              <div class="field">
-                <label>Shortage Cost</label>
-                <input id="optShortageCost" type="number" step="1" value="10" />
-              </div>
-              <div class="field">
-                <label>Forecast Demand</label>
-                <input id="optForecastDemand" type="number" step="1" value="120" />
-              </div>
+              <div class="field"><label>Forecast Demand</label><input id="optForecastDemand" type="number" step="0.1" value="120" /></div>
+              <div class="field"><label>Current Inventory</label><input id="optCurrentInventory" type="number" step="0.1" value="80" /></div>
             </div>
 
             <div class="grid-2">
-              <div class="field">
-                <label>Current Inventory</label>
-                <input id="optCurrentInventory" type="number" step="1" value="80" />
-              </div>
-              <div class="field">
-                <label>Demand Std</label>
-                <input id="optDemandStd" type="number" step="1" value="15" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label>Lead Time Days</label>
-              <input id="optLeadTime" type="number" step="1" value="7" />
+              <div class="field"><label>Demand Std</label><input id="optDemandStd" type="number" step="0.1" value="15" /></div>
+              <div class="field"><label>Lead Time Days</label><input id="optLeadTimeDays" type="number" step="1" value="7" /></div>
             </div>
 
             <div class="actions">
-              <button id="runOptimizationButton" class="btn-accent" type="button">Run Optimization</button>
+              <button id="runOptimizationButton" class="btn-accent" type="button">Run Inventory Optimization</button>
             </div>
 
-            <div id="optimizationResult" class="result-box">
-              No optimization result yet.
+            <div id="optimizationSummary" class="helper" style="margin-top:12px;">No optimization result yet.</div>
+
+            <div class="table-wrap" style="margin-top:14px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Recommended Order</th>
+                    <th>Safety Stock</th>
+                    <th>Reorder Point</th>
+                    <th>Expected Shortage</th>
+                    <th>Total Cost Item</th>
+                  </tr>
+                </thead>
+                <tbody id="optimizationTableBody"></tbody>
+              </table>
             </div>
+
+            <div id="optimizationEmpty" class="empty">No optimization data loaded.</div>
           </section>
         </div>
       </div>
@@ -774,9 +511,7 @@
 
     function initMap(){
       if(logisticsMap) return;
-
       logisticsMap = L.map("logisticsMap").setView([52.52, 13.40], 6);
-
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors"
@@ -786,10 +521,8 @@
     function clearMapObjects(){
       logisticsMarkers.forEach(marker => logisticsMap.removeLayer(marker));
       logisticsMarkers = [];
-
       logisticsLines.forEach(line => logisticsMap.removeLayer(line));
       logisticsLines = [];
-
       optimizedRouteLines.forEach(line => logisticsMap.removeLayer(line));
       optimizedRouteLines = [];
     }
@@ -797,135 +530,53 @@
     function renderMap(){
       initMap();
       clearMapObjects();
-
       const points = [];
-
       state.warehouses.forEach(warehouse => {
         if (warehouse.latitude == null || warehouse.longitude == null) return;
-
-        const marker = L.marker(
-          [warehouse.latitude, warehouse.longitude],
-          { icon: createWarehouseIcon() }
-        ).addTo(logisticsMap);
-
-        marker.bindPopup(`
-          <strong>Warehouse</strong><br>
-          ${warehouse.name}<br>
-          Capacity: ${warehouse.capacity}<br>
-          ID: ${warehouse.id}
-        `);
-
+        const marker = L.marker([warehouse.latitude, warehouse.longitude], { icon: createWarehouseIcon() }).addTo(logisticsMap);
+        marker.bindPopup(`<strong>Warehouse</strong><br>${warehouse.name}<br>Capacity: ${warehouse.capacity}<br>ID: ${warehouse.id}`);
         logisticsMarkers.push(marker);
         points.push([warehouse.latitude, warehouse.longitude]);
       });
-
       state.orders.forEach(order => {
         if (order.latitude == null || order.longitude == null) return;
-
-        const marker = L.marker(
-          [order.latitude, order.longitude],
-          { icon: createOrderIcon() }
-        ).addTo(logisticsMap);
-
-        marker.bindPopup(`
-          <strong>Order</strong><br>
-          ${order.description || "No description"}<br>
-          Demand: ${order.demand}<br>
-          Status: ${order.status}<br>
-          Warehouse: ${order.assigned_warehouse_name || "-"}
-        `);
-
+        const marker = L.marker([order.latitude, order.longitude], { icon: createOrderIcon() }).addTo(logisticsMap);
+        marker.bindPopup(`<strong>Order</strong><br>${order.description || "No description"}<br>Demand: ${order.demand}<br>Status: ${order.status}<br>Warehouse: ${order.assigned_warehouse_name || "-"}`);
         logisticsMarkers.push(marker);
         points.push([order.latitude, order.longitude]);
-
-        const matchedWarehouse = state.warehouses.find(
-          warehouse =>
-            warehouse.id === order.warehouse_id ||
-            warehouse.name === order.assigned_warehouse_name
-        );
-
+        const matchedWarehouse = state.warehouses.find(w => w.id === order.warehouse_id || w.name === order.assigned_warehouse_name);
         if(matchedWarehouse){
-          const line = L.polyline(
-            [
-              [matchedWarehouse.latitude, matchedWarehouse.longitude],
-              [order.latitude, order.longitude]
-            ],
-            {
-              color: "#2563eb",
-              weight: 3,
-              opacity: 0.35,
-              dashArray: "8, 8"
-            }
-          ).addTo(logisticsMap);
-
+          const line = L.polyline([[matchedWarehouse.latitude, matchedWarehouse.longitude],[order.latitude, order.longitude]], {color: "#2563eb", weight: 3, opacity: 0.35, dashArray: "8, 8"}).addTo(logisticsMap);
           logisticsLines.push(line);
         }
       });
-
       state.routeGroups.forEach(group => {
-        if(!group || !group.ordered_stops || group.ordered_stops.length < 2){
-          return;
-        }
-
-        const routePoints = [];
-
-        group.ordered_stops.forEach(stop => {
-          if(stop.latitude == null || stop.longitude == null) return;
-          routePoints.push([stop.latitude, stop.longitude]);
-          points.push([stop.latitude, stop.longitude]);
-        });
-
+        if(!group || !group.ordered_stops || group.ordered_stops.length < 2) return;
+        const routePoints = group.ordered_stops.filter(s => s.latitude != null && s.longitude != null).map(s => [s.latitude, s.longitude]);
         if(routePoints.length >= 2){
-          const routeLine = L.polyline(
-            routePoints,
-            {
-              color: "#0f766e",
-              weight: 4,
-              opacity: 0.9
-            }
-          ).addTo(logisticsMap);
-
+          const routeLine = L.polyline(routePoints, {color: "#0f766e", weight: 4, opacity: 0.9}).addTo(logisticsMap);
           optimizedRouteLines.push(routeLine);
         }
       });
-
-      if(points.length === 0){
-        logisticsMap.setView([52.52, 13.40], 6);
-        return;
-      }
-
-      if(points.length === 1){
-        logisticsMap.setView(points[0], 10);
-        return;
-      }
-
-      logisticsMap.fitBounds(points, { padding: [30, 30] });
+      if(points.length === 0) logisticsMap.setView([52.52, 13.40], 6);
+      else if(points.length === 1) logisticsMap.setView(points[0], 10);
+      else logisticsMap.fitBounds(points, { padding: [30, 30] });
     }
 
     async function login(){
       clearStatus();
-
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
-
       const body = new URLSearchParams();
       body.append("username", email);
       body.append("password", password);
-
       const response = await fetch(`${API_BASE_URL}/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body
       });
-
       const data = await response.json();
-
-      if(!response.ok){
-        throw new Error(data.detail || "Login failed");
-      }
-
+      if(!response.ok) throw new Error(data.detail || "Login failed");
       accessToken = data.access_token;
       localStorage.setItem("dashboard_access_token", accessToken);
       showStatus("Login successful.", "success");
@@ -935,46 +586,26 @@
 
     async function apiGet(path){
       const response = await fetch(`${API_BASE_URL}${path}`, {
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Accept": "application/json"
-        }
+        headers: { "Authorization": `Bearer ${accessToken}`, "Accept": "application/json" }
       });
-
       const data = await response.json();
-
-      if(!response.ok){
-        throw new Error(data.detail || `Request failed: ${path}`);
-      }
-
+      if(!response.ok) throw new Error(data.detail || `Request failed: ${path}`);
       return data;
     }
 
     async function apiPost(path, payload = {}){
       const response = await fetch(`${API_BASE_URL}${path}`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(payload)
       });
-
       const data = await response.json();
-
-      if(!response.ok){
-        throw new Error(data.detail || `Request failed: ${path}`);
-      }
-
+      if(!response.ok) throw new Error(data.detail || `Request failed: ${path}`);
       return data;
     }
 
     async function loadProfile(){
-      if(!accessToken){
-        throw new Error("Please login first.");
-      }
-
+      if(!accessToken) throw new Error("Please login first.");
       state.profile = await apiGet("/me");
       updateAuthInfo();
     }
@@ -998,80 +629,65 @@
     }
 
     async function optimizeRoutes(){
-      if(!accessToken){
-        throw new Error("Please login first.");
-      }
-
+      if(!accessToken) throw new Error("Please login first.");
       const data = await apiPost("/routes/optimize", {});
       state.routeGroups = data.route_groups || [];
       renderMap();
-
-      if(state.routeGroups.length){
-        showStatus("Optimized route loaded on map.", "success");
-      }else{
-        showStatus(data.message || "No route data available.", "info");
-      }
+      showStatus(state.routeGroups.length ? "Optimized route loaded on map." : "No route data available.", state.routeGroups.length ? "success" : "info");
     }
 
     async function runOptimization(){
-      const serviceLevel = parseFloat(document.getElementById("optServiceLevel").value);
-      const holdingCost = parseFloat(document.getElementById("optHoldingCost").value);
-      const shortageCost = parseFloat(document.getElementById("optShortageCost").value);
-      const forecastDemand = parseFloat(document.getElementById("optForecastDemand").value);
-      const currentInventory = parseFloat(document.getElementById("optCurrentInventory").value);
-      const demandStd = parseFloat(document.getElementById("optDemandStd").value);
-      const leadTime = parseInt(document.getElementById("optLeadTime").value, 10);
-
       const payload = {
-        service_level: serviceLevel,
-        holding_cost: holdingCost,
-        shortage_cost: shortageCost,
-        demand: [
-          {
-            product_id: "SKU-001",
-            forecast_demand: forecastDemand,
-            current_inventory: currentInventory,
-            demand_std: demandStd,
-            lead_time_days: leadTime
-          }
-        ]
+        service_level: parseFloat(document.getElementById("optServiceLevel").value),
+        holding_cost: parseFloat(document.getElementById("optHoldingCost").value),
+        shortage_cost: parseFloat(document.getElementById("optShortageCost").value),
+        demand: [{
+          product_id: document.getElementById("optProductId").value.trim() || "SKU-001",
+          forecast_demand: parseFloat(document.getElementById("optForecastDemand").value),
+          current_inventory: parseFloat(document.getElementById("optCurrentInventory").value),
+          demand_std: parseFloat(document.getElementById("optDemandStd").value),
+          lead_time_days: parseInt(document.getElementById("optLeadTimeDays").value, 10)
+        }]
       };
-
       const result = await apiPost("/optimize", payload);
+      renderOptimizationResult(result);
+    }
 
-      if(!result.recommendations || !result.recommendations.length){
-        document.getElementById("optimizationResult").innerHTML = "No optimization result returned.";
+    function renderOptimizationResult(result){
+      const tbody = document.getElementById("optimizationTableBody");
+      const empty = document.getElementById("optimizationEmpty");
+      const summary = document.getElementById("optimizationSummary");
+      tbody.innerHTML = "";
+      if(!result || !result.recommendations || !result.recommendations.length){
+        empty.style.display = "block";
+        summary.textContent = "No optimization result returned.";
         return;
       }
-
-      const rec = result.recommendations[0];
-
-      document.getElementById("optimizationResult").innerHTML = `
-        <strong>Product:</strong> ${rec.product_id}<br>
-        <strong>Recommended Order Quantity:</strong> ${Number(rec.recommended_order_quantity).toFixed(2)}<br>
-        <strong>Safety Stock:</strong> ${Number(rec.safety_stock).toFixed(2)}<br>
-        <strong>Reorder Point:</strong> ${Number(rec.reorder_point).toFixed(2)}<br>
-        <strong>Expected Shortage:</strong> ${Number(rec.expected_shortage).toFixed(2)}<br>
-        <strong>Total Cost Item:</strong> ${Number(rec.total_cost_item).toFixed(2)}<br>
-        <strong>Total Cost:</strong> ${Number(result.total_cost).toFixed(2)}
-      `;
+      empty.style.display = "none";
+      result.recommendations.forEach(item => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.product_id ?? ""}</td>
+          <td>${Number(item.recommended_order_quantity ?? 0).toFixed(2)}</td>
+          <td>${Number(item.safety_stock ?? 0).toFixed(2)}</td>
+          <td>${Number(item.reorder_point ?? 0).toFixed(2)}</td>
+          <td>${Number(item.expected_shortage ?? 0).toFixed(2)}</td>
+          <td>${Number(item.total_cost_item ?? 0).toFixed(2)}</td>
+        `;
+        tbody.appendChild(row);
+      });
+      summary.innerHTML = `<strong>Total Cost:</strong> ${Number(result.total_cost ?? 0).toFixed(2)}`;
     }
 
     async function loadAllData(){
       await loadWarehouses();
       await loadOrders();
-
-      if(accessToken){
-        try{
-          const routeData = await apiPost("/routes/optimize", {});
-          state.routeGroups = routeData.route_groups || [];
-        }catch(error){
-          state.routeGroups = [];
-        }
-      }else{
+      try {
+        const routeData = await apiPost("/routes/optimize", {});
+        state.routeGroups = routeData.route_groups || [];
+      } catch {
         state.routeGroups = [];
       }
-
       renderMap();
     }
 
@@ -1079,24 +695,14 @@
       const tbody = document.getElementById("warehousesTableBody");
       const empty = document.getElementById("warehousesEmpty");
       tbody.innerHTML = "";
-
       if(!state.warehouses.length){
         empty.style.display = "block";
         return;
       }
-
       empty.style.display = "none";
-
       state.warehouses.forEach(item => {
         const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${item.id}</td>
-          <td>${item.name ?? ""}</td>
-          <td>${item.latitude ?? ""}</td>
-          <td>${item.longitude ?? ""}</td>
-          <td>${item.capacity ?? ""}</td>
-          <td>${item.owner_id ?? ""}</td>
-        `;
+        row.innerHTML = `<td>${item.id}</td><td>${item.name ?? ""}</td><td>${item.latitude ?? ""}</td><td>${item.longitude ?? ""}</td><td>${item.capacity ?? ""}</td><td>${item.owner_id ?? ""}</td>`;
         tbody.appendChild(row);
       });
     }
@@ -1105,26 +711,15 @@
       const tbody = document.getElementById("ordersTableBody");
       const empty = document.getElementById("ordersEmpty");
       tbody.innerHTML = "";
-
       if(!state.orders.length){
         empty.style.display = "block";
         return;
       }
-
       empty.style.display = "none";
-
       state.orders.forEach(item => {
         const statusClass = item.status === "planned" ? "pill pill-planned" : "pill pill-pending";
         const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${item.id}</td>
-          <td>${item.description ?? ""}</td>
-          <td>${item.demand ?? ""}</td>
-          <td><span class="${statusClass}">${item.status ?? ""}</span></td>
-          <td>${item.assigned_warehouse_name ?? ""}</td>
-          <td>${item.latitude ?? ""}</td>
-          <td>${item.longitude ?? ""}</td>
-        `;
+        row.innerHTML = `<td>${item.id}</td><td>${item.description ?? ""}</td><td>${item.demand ?? ""}</td><td><span class="${statusClass}">${item.status ?? ""}</span></td><td>${item.assigned_warehouse_name ?? ""}</td><td>${item.latitude ?? ""}</td><td>${item.longitude ?? ""}</td>`;
         tbody.appendChild(row);
       });
     }
@@ -1138,49 +733,31 @@
 
     function renderChart(){
       const ctx = document.getElementById("summaryChart");
-
       const labels = state.warehouses.map(x => x.name);
       const capacities = state.warehouses.map(x => Number(x.capacity || 0));
       const totalDemand = state.orders.reduce((sum, x) => sum + Number(x.demand || 0), 0);
-
-      if(summaryChart){
-        summaryChart.destroy();
-      }
-
+      if(summaryChart) summaryChart.destroy();
       summaryChart = new Chart(ctx, {
         type: "bar",
         data: {
           labels: labels.length ? labels : ["No Data"],
           datasets: [
-            {
-              label: "Warehouse Capacity",
-              data: labels.length ? capacities : [0]
-            },
-            {
-              label: "Total Orders Demand",
-              data: labels.length ? labels.map(() => totalDemand) : [0]
-            }
+            { label: "Warehouse Capacity", data: labels.length ? capacities : [0] },
+            { label: "Total Orders Demand", data: labels.length ? labels.map(() => totalDemand) : [0] }
           ]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
+        options: { responsive: true, maintainAspectRatio: false }
       });
     }
 
     async function createWarehouse(){
-      if(!accessToken){
-        throw new Error("Please login first.");
-      }
-
+      if(!accessToken) throw new Error("Please login first.");
       const payload = {
         name: document.getElementById("warehouseName").value.trim(),
         latitude: Number(document.getElementById("warehouseLatitude").value),
         longitude: Number(document.getElementById("warehouseLongitude").value),
         capacity: Number(document.getElementById("warehouseCapacity").value)
       };
-
       await apiPost("/warehouses/", payload);
       showStatus("Warehouse created successfully.", "success");
       await loadWarehouses();
@@ -1188,52 +765,31 @@
     }
 
     async function createOrder(){
-      if(!accessToken){
-        throw new Error("Please login first.");
-      }
-
+      if(!accessToken) throw new Error("Please login first.");
       sanitizeWarehouseIdInput();
-
       const description = document.getElementById("orderDescription").value.trim();
       const latRaw = document.getElementById("orderLatitude").value.trim();
       const lonRaw = document.getElementById("orderLongitude").value.trim();
       const demandRaw = document.getElementById("orderDemand").value.trim();
       const warehouseIdRaw = document.getElementById("orderWarehouseId").value.trim();
-
-      if(latRaw === "" || lonRaw === "" || demandRaw === ""){
-        throw new Error("Latitude, Longitude and Demand are required.");
-      }
-
+      if(latRaw === "" || lonRaw === "" || demandRaw === "") throw new Error("Latitude, Longitude and Demand are required.");
       const payload = {
-        description: description,
+        description,
         latitude: parseFloat(latRaw),
         longitude: parseFloat(lonRaw),
         demand: parseInt(demandRaw, 10)
       };
-
       if(warehouseIdRaw !== ""){
-        const parsedWarehouseId = parseInt(warehouseIdRaw, 10);
-        if(Number.isNaN(parsedWarehouseId)){
-          throw new Error("Warehouse ID must be a valid number or left empty.");
-        }
-        payload.warehouse_id = parsedWarehouseId;
+        const parsed = parseInt(warehouseIdRaw, 10);
+        if(!isNaN(parsed)) payload.warehouse_id = parsed;
       }
-
       await apiPost("/orders/", payload);
-
-      showStatus(
-        warehouseIdRaw === ""
-          ? "Order created successfully with AI warehouse allocation."
-          : "Order created successfully.",
-        "success"
-      );
-
+      showStatus(warehouseIdRaw === "" ? "Order created successfully with AI warehouse allocation." : "Order created successfully.", "success");
       document.getElementById("orderDescription").value = "";
       document.getElementById("orderLatitude").value = "";
       document.getElementById("orderLongitude").value = "";
       document.getElementById("orderDemand").value = "";
       document.getElementById("orderWarehouseId").value = "";
-
       await loadOrders();
       await optimizeRoutes().catch(() => {});
     }
@@ -1244,6 +800,12 @@
       state.warehouses = [];
       state.orders = [];
       state.routeGroups = [];
+      const optBody = document.getElementById("optimizationTableBody");
+      const optEmpty = document.getElementById("optimizationEmpty");
+      const optSummary = document.getElementById("optimizationSummary");
+      if(optBody) optBody.innerHTML = "";
+      if(optEmpty) optEmpty.style.display = "block";
+      if(optSummary) optSummary.textContent = "No optimization result yet.";
       localStorage.removeItem("dashboard_access_token");
       updateAuthInfo();
       renderWarehouses();
@@ -1251,42 +813,23 @@
       renderKpis();
       renderChart();
       renderMap();
-      document.getElementById("optimizationResult").innerHTML = "No optimization result yet.";
       showStatus("Logged out.", "info");
     }
 
     document.getElementById("loginButton").onclick = async () => {
-      try{
-        await login();
-      }catch(error){
-        showStatus(error.message || "Login failed.", "error");
-      }
+      try{ await login(); }catch(error){ showStatus(error.message || "Login failed.", "error"); }
     };
 
     document.getElementById("loadProfileButton").onclick = async () => {
-      try{
-        await loadProfile();
-        showStatus("Profile loaded.", "success");
-      }catch(error){
-        showStatus(error.message || "Profile load failed.", "error");
-      }
+      try{ await loadProfile(); showStatus("Profile loaded.", "success"); }catch(error){ showStatus(error.message || "Profile load failed.", "error"); }
     };
 
     document.getElementById("refreshAllButton").onclick = async () => {
-      try{
-        await loadAllData();
-        showStatus("Dashboard data refreshed.", "success");
-      }catch(error){
-        showStatus(error.message || "Refresh failed.", "error");
-      }
+      try{ await loadAllData(); showStatus("Dashboard data refreshed.", "success"); }catch(error){ showStatus(error.message || "Refresh failed.", "error"); }
     };
 
     document.getElementById("optimizeRoutesButton").onclick = async () => {
-      try{
-        await optimizeRoutes();
-      }catch(error){
-        showStatus(error.message || "Route optimization failed.", "error");
-      }
+      try{ await optimizeRoutes(); }catch(error){ showStatus(error.message || "Route optimization failed.", "error"); }
     };
 
     document.getElementById("runOptimizationButton").onclick = async () => {
@@ -1299,19 +842,11 @@
     };
 
     document.getElementById("createWarehouseButton").onclick = async () => {
-      try{
-        await createWarehouse();
-      }catch(error){
-        showStatus(error.message || "Warehouse creation failed.", "error");
-      }
+      try{ await createWarehouse(); }catch(error){ showStatus(error.message || "Warehouse creation failed.", "error"); }
     };
 
     document.getElementById("createOrderButton").onclick = async () => {
-      try{
-        await createOrder();
-      }catch(error){
-        showStatus(error.message || "Order creation failed.", "error");
-      }
+      try{ await createOrder(); }catch(error){ showStatus(error.message || "Order creation failed.", "error"); }
     };
 
     document.getElementById("logoutButton").onclick = logout;
@@ -1340,10 +875,7 @@
     if(accessToken){
       loadProfile()
         .then(loadAllData)
-        .then(() => showStatus("Dashboard loaded from saved session.", "success"))
-        .catch(() => {
-          logout();
-        });
+        .catch(() => logout());
     }
   </script>
 </body>
