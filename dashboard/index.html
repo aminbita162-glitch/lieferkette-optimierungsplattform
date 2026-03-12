@@ -438,6 +438,128 @@
 
             <div id="optimizationEmpty" class="empty">No optimization data loaded.</div>
           </section>
+
+          <section class="card">
+  <div class="card-title">AI Logistics Planner</div>
+  <div class="card-subtitle">
+    Run the combined AI logistics plan engine from the dashboard.
+  </div>
+
+  <div class="grid-2">
+    <div class="field">
+      <label>Order Latitude</label>
+      <input id="lpOrderLatitude" type="number" step="0.01" value="52.52" />
+    </div>
+    <div class="field">
+      <label>Order Longitude</label>
+      <input id="lpOrderLongitude" type="number" step="0.01" value="13.40" />
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Warehouses JSON</label>
+    <textarea id="lpWarehousesJson" rows="6" style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;background:#fff;font-family:Arial,sans-serif;">[
+  {
+    "id": 1,
+    "name": "Berlin Warehouse",
+    "latitude": 52.50,
+    "longitude": 13.39
+  },
+  {
+    "id": 2,
+    "name": "Hamburg Warehouse",
+    "latitude": 53.55,
+    "longitude": 10.00
+  }
+]</textarea>
+  </div>
+
+  <div class="field">
+    <label>Distance Matrix JSON</label>
+    <textarea id="lpDistanceMatrixJson" rows="5" style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;background:#fff;font-family:Arial,sans-serif;">[
+  [0, 4, 7],
+  [4, 0, 3],
+  [7, 3, 0]
+]</textarea>
+  </div>
+
+  <div class="field">
+    <label>Stop Labels JSON</label>
+    <textarea id="lpStopLabelsJson" rows="4" style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;background:#fff;font-family:Arial,sans-serif;">[
+  "Warehouse",
+  "Order A",
+  "Order B"
+]</textarea>
+  </div>
+
+  <div class="field">
+    <label>Demand History JSON</label>
+    <textarea id="lpDemandHistoryJson" rows="4" style="width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:12px;font-size:14px;background:#fff;font-family:Arial,sans-serif;">[
+  100,
+  110,
+  120,
+  130,
+  125
+]</textarea>
+  </div>
+
+  <div class="actions">
+    <button id="runLogisticsPlanButton" class="btn-accent" type="button">
+      Run AI Logistics Plan
+    </button>
+  </div>
+
+  <div id="logisticsPlanSummary" class="helper" style="margin-top:12px;">
+    No AI logistics plan result yet.
+  </div>
+
+  <div class="table-wrap" style="margin-top:14px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Forecast</th>
+          <th>Selected Warehouse</th>
+          <th>Distance</th>
+          <th>Route Indexes</th>
+          <th>Route Labels</th>
+        </tr>
+      </thead>
+      <tbody id="logisticsPlanTableBody"></tbody>
+    </table>
+  </div>
+
+  <div id="logisticsPlanEmpty" class="empty">No AI logistics plan data loaded.</div>
+</section>
+
+<section class="card">
+  <div class="card-title">System Status / Error Monitor</div>
+  <div class="card-subtitle">
+    Shows the latest module status and dashboard errors.
+  </div>
+
+  <div class="actions">
+    <button id="clearSystemErrorsButton" class="btn-secondary" type="button">
+      Clear Errors
+    </button>
+  </div>
+
+  <div class="table-wrap" style="margin-top:14px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Module</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="systemStatusTableBody"></tbody>
+    </table>
+  </div>
+
+  <div id="systemErrorsBox" class="helper" style="margin-top:14px;">
+    No system errors recorded.
+  </div>
+</section>
+
         </div>
       </div>
     </main>
@@ -815,6 +937,254 @@
       renderMap();
       showStatus("Logged out.", "info");
     }
+
+    state.systemStatus = {
+      "Login": "idle",
+      "Warehouses API": "idle",
+      "Orders API": "idle",
+      "Route Optimization": "idle",
+      "Inventory Optimization": "idle",
+      "AI Logistics Planner": "idle"
+    };
+
+    state.systemErrors = [];
+    state.logisticsPlanResult = null;
+
+    function setModuleStatus(moduleName, status){
+      if (!state.systemStatus[moduleName]) return;
+      state.systemStatus[moduleName] = status;
+      renderSystemStatus();
+    }
+
+    function recordSystemError(moduleName, error){
+      const message =
+        typeof error === "string"
+          ? error
+          : (error && error.message ? error.message : "Unknown error");
+
+      state.systemErrors.unshift({
+        module: moduleName,
+        message: message,
+        time: new Date().toLocaleString()
+      });
+
+      if (state.systemErrors.length > 10) {
+        state.systemErrors = state.systemErrors.slice(0, 10);
+      }
+
+      if (state.systemStatus[moduleName]) {
+        state.systemStatus[moduleName] = "error";
+      }
+
+      renderSystemStatus();
+    }
+
+    function renderSystemStatus(){
+      const tbody = document.getElementById("systemStatusTableBody");
+      const errorsBox = document.getElementById("systemErrorsBox");
+
+      if (!tbody || !errorsBox) return;
+
+      tbody.innerHTML = "";
+
+      Object.entries(state.systemStatus).forEach(([moduleName, status]) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${moduleName}</td>
+          <td>${status}</td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      if (!state.systemErrors.length) {
+        errorsBox.textContent = "No system errors recorded.";
+        return;
+      }
+
+      errorsBox.innerHTML = state.systemErrors
+        .map(item => `<div><strong>${item.module}</strong> — ${item.message}<br><span>${item.time}</span></div>`)
+        .join("<hr style='border:none;border-top:1px solid var(--border);margin:10px 0;'>");
+    }
+
+    function renderLogisticsPlanResult(result){
+      const tbody = document.getElementById("logisticsPlanTableBody");
+      const empty = document.getElementById("logisticsPlanEmpty");
+      const summary = document.getElementById("logisticsPlanSummary");
+
+      if (!tbody || !empty || !summary) return;
+
+      tbody.innerHTML = "";
+
+      if (!result) {
+        empty.style.display = "block";
+        summary.textContent = "No AI logistics plan result yet.";
+        return;
+      }
+
+      empty.style.display = "none";
+
+      const forecastText = Array.isArray(result.forecast) ? result.forecast.join(", ") : "-";
+      const selectedWarehouse = result.warehouse_selection?.selected_warehouse?.name || "-";
+      const distance = result.warehouse_selection?.distance != null
+        ? Number(result.warehouse_selection.distance).toFixed(4)
+        : "-";
+      const routeIndexes = Array.isArray(result.optimized_route_indexes)
+        ? result.optimized_route_indexes.join(", ")
+        : "-";
+      const routeLabels = Array.isArray(result.optimized_route_labels)
+        ? result.optimized_route_labels.join(" → ")
+        : "-";
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${forecastText}</td>
+        <td>${selectedWarehouse}</td>
+        <td>${distance}</td>
+        <td>${routeIndexes}</td>
+        <td>${routeLabels}</td>
+      `;
+      tbody.appendChild(row);
+
+      summary.innerHTML = `
+        <strong>Forecast Days:</strong> ${Array.isArray(result.forecast) ? result.forecast.length : 0}
+        &nbsp;&nbsp;|&nbsp;&nbsp;
+        <strong>Selected Warehouse:</strong> ${selectedWarehouse}
+      `;
+    }
+
+    function parseJsonFromField(fieldId, fieldLabel){
+      const el = document.getElementById(fieldId);
+      if (!el) throw new Error(`${fieldLabel} field not found`);
+
+      try {
+        return JSON.parse(el.value);
+      } catch (error) {
+        throw new Error(`${fieldLabel} is not valid JSON`);
+      }
+    }
+
+    async function runLogisticsPlan(){
+      try {
+        const payload = {
+          order_location: {
+            latitude: Number(document.getElementById("lpOrderLatitude").value),
+            longitude: Number(document.getElementById("lpOrderLongitude").value)
+          },
+          warehouses: parseJsonFromField("lpWarehousesJson", "Warehouses JSON"),
+          distance_matrix: parseJsonFromField("lpDistanceMatrixJson", "Distance Matrix JSON"),
+          stop_labels: parseJsonFromField("lpStopLabelsJson", "Stop Labels JSON"),
+          demand_history: parseJsonFromField("lpDemandHistoryJson", "Demand History JSON")
+        };
+
+        const result = await apiPost("/ai/logistics-plan", payload);
+        state.logisticsPlanResult = result;
+        setModuleStatus("AI Logistics Planner", "ok");
+        renderLogisticsPlanResult(result);
+        return result;
+      } catch (error) {
+        recordSystemError("AI Logistics Planner", error);
+        renderLogisticsPlanResult(null);
+        throw error;
+      }
+    }
+
+    const originalLogin = login;
+    login = async function(){
+      try {
+        const result = await originalLogin();
+        setModuleStatus("Login", "ok");
+        return result;
+      } catch (error) {
+        recordSystemError("Login", error);
+        throw error;
+      }
+    };
+
+    const originalLoadWarehouses = loadWarehouses;
+    loadWarehouses = async function(){
+      try {
+        const result = await originalLoadWarehouses();
+        setModuleStatus("Warehouses API", "ok");
+        return result;
+      } catch (error) {
+        recordSystemError("Warehouses API", error);
+        throw error;
+      }
+    };
+
+    const originalLoadOrders = loadOrders;
+    loadOrders = async function(){
+      try {
+        const result = await originalLoadOrders();
+        setModuleStatus("Orders API", "ok");
+        return result;
+      } catch (error) {
+        recordSystemError("Orders API", error);
+        throw error;
+      }
+    };
+
+    const originalOptimizeRoutes = optimizeRoutes;
+    optimizeRoutes = async function(){
+      try {
+        const result = await originalOptimizeRoutes();
+        setModuleStatus("Route Optimization", "ok");
+        return result;
+      } catch (error) {
+        recordSystemError("Route Optimization", error);
+        throw error;
+      }
+    };
+
+    const originalRunOptimization = runOptimization;
+    runOptimization = async function(){
+      try {
+        const result = await originalRunOptimization();
+        setModuleStatus("Inventory Optimization", "ok");
+        return result;
+      } catch (error) {
+        recordSystemError("Inventory Optimization", error);
+        throw error;
+      }
+    };
+
+    const originalLogout = logout;
+    logout = function(){
+      const result = originalLogout();
+
+      state.systemStatus = {
+        "Login": "idle",
+        "Warehouses API": "idle",
+        "Orders API": "idle",
+        "Route Optimization": "idle",
+        "Inventory Optimization": "idle",
+        "AI Logistics Planner": "idle"
+      };
+      state.systemErrors = [];
+      state.logisticsPlanResult = null;
+
+      renderSystemStatus();
+      renderLogisticsPlanResult(null);
+
+      return result;
+    };
+
+    document.getElementById("runLogisticsPlanButton").onclick = async () => {
+      try {
+        await runLogisticsPlan();
+        showStatus("AI logistics plan completed.", "success");
+      } catch (error) {
+        showStatus(error.message || "AI logistics plan failed.", "error");
+      }
+    };
+
+    document.getElementById("clearSystemErrorsButton").onclick = () => {
+      state.systemErrors = [];
+      renderSystemStatus();
+    };
+
+    renderSystemStatus();
+    renderLogisticsPlanResult(null);
 
     document.getElementById("loginButton").onclick = async () => {
       try{ await login(); }catch(error){ showStatus(error.message || "Login failed.", "error"); }
