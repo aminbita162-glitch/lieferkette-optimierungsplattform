@@ -1,4 +1,4 @@
-# AI-Powered Supply Chain Optimization Platform
+# AI-Powered Supply Chain Optimization Platform 2.
 
 <p align="center">
   <strong>An end-to-end logistics decision-support platform for demand forecasting, inventory planning, warehouse allocation, and route optimization.</strong>
@@ -61,20 +61,124 @@ This project consolidates those workflows behind one API and one operational int
 
 ## 🏗️ Current System Architecture
 
+### System context
+
 ```mermaid
 flowchart TB
-    U["Browser / API Client"] --> UI["Dashboard · Swagger · ReDoc"]
-    UI --> API["FastAPI Application"]
-    API --> AUTH["JWT Authentication"]
-    API --> ROUTERS["Domain Routers"]
-    ROUTERS --> SERVICES["Forecasting · Inventory · Allocation · Routing"]
-    ROUTERS --> ORM["SQLAlchemy Data Layer"]
-    ORM --> DB[("PostgreSQL")]
-    SERVICES --> RESULTS["Plans · Recommendations · Simulations"]
-    RESULTS --> UI
+    USER["Authenticated Platform User"]
+    CLIENT["External API Consumer"]
+
+    subgraph PLATFORM["AI Logistics Platform"]
+        WEB["Responsive Operations Dashboard"]
+        DOCS["Swagger UI · ReDoc · OpenAPI"]
+        CORE["FastAPI Application"]
+        DECISION["Logistics Decision Services"]
+        DATA["PostgreSQL Persistence"]
+    end
+
+    MAP["OpenStreetMap Tile Service"]
+    DELIVERY["GitHub Actions · Render Deployment"]
+
+    USER --> WEB
+    CLIENT --> DOCS
+    CLIENT --> CORE
+    WEB --> CORE
+    DOCS --> CORE
+    CORE --> DECISION
+    CORE --> DATA
+    WEB --> MAP
+    DELIVERY --> CORE
 ```
 
-### Architecture responsibilities
+The platform exposes the same application capabilities through an operational browser interface and a typed HTTP API. FastAPI coordinates identity, domain routing, decision services, and persistence; the dashboard consumes those APIs and adds interactive operational visualization.
+
+### Layered application architecture
+
+```mermaid
+flowchart TB
+    subgraph EXPERIENCE["1 · Experience and Integration Layer"]
+        DASH["Dashboard<br/>KPI · Tables · Forms"]
+        GEO["Leaflet Map<br/>Markers · Allocation Lines · Routes"]
+        CHART["Chart.js<br/>Capacity vs Demand"]
+        CONTRACT["OpenAPI 3.1<br/>Swagger · ReDoc"]
+        CONSUMER["HTTP API Clients"]
+    end
+
+    subgraph EDGE["2 · Application Edge"]
+        STATIC["Static Dashboard Mount<br/>/dashboard"]
+        FASTAPI["FastAPI Application<br/>v0.8.1"]
+        CORS["CORS Middleware"]
+        SCHEMA["Pydantic Contracts<br/>Validation · Serialization"]
+    end
+
+    subgraph ACCESS["3 · Identity and Access"]
+        REGISTER["Registration"]
+        LOGIN["OAuth2 Password Flow"]
+        TOKEN["JWT Issue and Validation"]
+        OWNER["User-Scoped Data Access"]
+    end
+
+    subgraph DOMAIN["4 · Domain API Layer"]
+        AI["AI Logistics Router<br/>Forecast · Allocation · Plan"]
+        OPT["Optimization Router<br/>Inventory Policy"]
+        SIM["Simulation Router<br/>Synthetic Demand"]
+        WH["Warehouse Router<br/>Create · Read · Delete"]
+        ORD["Order Router<br/>Create · Read · Delete"]
+        ROUTE["Route Router<br/>Group · Sequence · Summarize"]
+    end
+
+    subgraph INTELLIGENCE["5 · Decision and Simulation Layer"]
+        FORECAST["Demand Forecast<br/>Moving-Average Baseline"]
+        INVENTORY["Inventory Recommendation<br/>Safety Stock · Reorder Point"]
+        ALLOCATION["Warehouse Allocation<br/>Nearest Coordinate"]
+        ROUTING["Route Optimization<br/>Nearest-Neighbor Heuristic"]
+        GENERATOR["Synthetic Data Generation<br/>Gaussian · Negative Binomial"]
+    end
+
+    subgraph PERSISTENCE["6 · Persistence Layer"]
+        SESSION["SQLAlchemy Engine<br/>Session Lifecycle"]
+        MODELS["ORM Models<br/>User · Warehouse · Order"]
+        POSTGRES[("PostgreSQL")]
+    end
+
+    DASH --> STATIC
+    GEO --> STATIC
+    CHART --> STATIC
+    CONTRACT --> FASTAPI
+    CONSUMER --> FASTAPI
+    STATIC --> FASTAPI
+
+    CORS --> FASTAPI
+    FASTAPI --> SCHEMA
+    FASTAPI --> REGISTER
+    FASTAPI --> LOGIN
+    LOGIN --> TOKEN
+    TOKEN --> OWNER
+
+    FASTAPI --> AI
+    FASTAPI --> OPT
+    FASTAPI --> SIM
+    OWNER --> WH
+    OWNER --> ORD
+    OWNER --> ROUTE
+
+    AI --> FORECAST
+    AI --> ALLOCATION
+    AI --> ROUTING
+    OPT --> INVENTORY
+    SIM --> GENERATOR
+    ORD --> ALLOCATION
+    ROUTE --> ROUTING
+
+    REGISTER --> SESSION
+    OWNER --> SESSION
+    WH --> SESSION
+    ORD --> SESSION
+    SESSION --> MODELS
+    MODELS --> POSTGRES
+```
+
+### Runtime responsibility map
 
 | Layer | Current responsibility |
 |---|---|
@@ -85,6 +189,70 @@ flowchart TB
 | 🗃️ Persistence | SQLAlchemy models and sessions backed by PostgreSQL |
 | 🧪 Simulation | API-level daily-demand simulation plus an offline synthetic demand generator with seasonality, promotion, price, and dispersion controls |
 | ✅ Delivery assurance | GitHub Actions workflow using Python 3.11 and `pytest` |
+
+### Authenticated transaction path
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User
+    participant Dashboard
+    participant API as FastAPI
+    participant Auth as JWT Security
+    participant Router as Domain Router
+    participant Service as Decision Service
+    participant DB as PostgreSQL
+
+    User->>Dashboard: Submit credentials or operation
+    Dashboard->>API: HTTPS request
+    API->>Auth: Validate credentials or bearer token
+    Auth->>DB: Resolve user identity
+    DB-->>Auth: User record
+    Auth-->>API: Authenticated user context
+    API->>Router: Validate and dispatch request
+
+    alt Data operation
+        Router->>DB: Execute owner-scoped query
+        DB-->>Router: Persisted domain records
+    else Decision operation
+        Router->>Service: Execute forecast or optimization
+        Service-->>Router: Structured recommendation
+    end
+
+    Router-->>API: Typed response
+    API-->>Dashboard: JSON result
+    Dashboard-->>User: Tables, KPIs, chart, or map
+```
+
+### Delivery topology
+
+```mermaid
+flowchart TB
+    DEV["Repository Change"]
+    MAIN["GitHub Main Branch"]
+
+    subgraph CI["Verification Path"]
+        ACTION["GitHub Actions"]
+        ENV["Python 3.11 Environment"]
+        TEST["pytest Calendar Test Suite"]
+    end
+
+    subgraph RUNTIME["Deployment Path"]
+        BUILD["Dependency Build<br/>anforderungen.txt"]
+        START["Uvicorn Process<br/>FastAPI Application"]
+        LIVE["Public HTTPS Service<br/>Frankfurt Region"]
+    end
+
+    DEV --> MAIN
+    MAIN --> ACTION
+    ACTION --> ENV
+    ENV --> TEST
+    MAIN --> BUILD
+    BUILD --> START
+    START --> LIVE
+```
+
+The diagrams above document the current implementation and deployment path. They do not imply distributed microservices, asynchronous processing, model serving infrastructure, a vector database, or autonomous agents; those capabilities remain roadmap items.
 
 ## ✨ Implemented Capabilities
 
@@ -182,13 +350,53 @@ The live dashboard integrates:
 ## 🧠 Decision Flow
 
 ```mermaid
-flowchart LR
-    A["Demand History"] --> B["Forecast"]
-    C["Order Location"] --> D["Warehouse Allocation"]
-    E["Distance Matrix"] --> F["Route Sequence"]
-    B --> G["Logistics Plan"]
-    D --> G
-    F --> G
+flowchart TB
+    subgraph INPUT["Validated Logistics Inputs"]
+        HISTORY["Demand History"]
+        LOCATION["Order Coordinates"]
+        WAREHOUSES["Warehouse Candidates"]
+        MATRIX["Distance Matrix"]
+        LABELS["Stop Labels"]
+    end
+
+    subgraph EXECUTION["Combined Planning Execution"]
+        FORECAST["7-Day Demand Forecast"]
+        ALLOCATE["Nearest-Warehouse Selection"]
+        ROUTE["Nearest-Neighbor Route"]
+        COMPOSE["Plan Composition"]
+    end
+
+    subgraph OUTPUT["Structured API Response"]
+        PREDICTION["Forecast Values"]
+        SELECTION["Selected Warehouse<br/>Coordinate Distance"]
+        SEQUENCE["Route Indexes<br/>Route Labels"]
+    end
+
+    subgraph EXPERIENCE["Dashboard Projection"]
+        TABLE["Planning Result Table"]
+        STATUS["Module Status"]
+        MAP["Operational Map Context"]
+    end
+
+    HISTORY --> FORECAST
+    LOCATION --> ALLOCATE
+    WAREHOUSES --> ALLOCATE
+    MATRIX --> ROUTE
+    LABELS --> ROUTE
+
+    FORECAST --> COMPOSE
+    ALLOCATE --> COMPOSE
+    ROUTE --> COMPOSE
+
+    COMPOSE --> PREDICTION
+    COMPOSE --> SELECTION
+    COMPOSE --> SEQUENCE
+
+    PREDICTION --> TABLE
+    SELECTION --> TABLE
+    SEQUENCE --> TABLE
+    COMPOSE --> STATUS
+    SEQUENCE -. "Related route view" .-> MAP
 ```
 
 The combined `/ai/logistics-plan` operation executes the forecast, warehouse allocation, and route-sequencing services in one request and returns a consolidated plan.
